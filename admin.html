@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nini Garments | Admin Dashboard</title><link rel="stylesheet" href="style.css">
+</head>
+<body class="admin-body">
+<header><a class="brand" href="index.html"><img src="assets/nini-logo.png"></a><a class="admin-link" href="index.html">← Store</a></header>
+<main class="admin">
+<h1>Admin Dashboard</h1>
+<div class="stats">
+  <div><small>Products</small><strong id="sProducts">0</strong></div>
+  <div><small>Total Stock</small><strong id="sStock">0</strong></div>
+  <div><small>Orders</small><strong id="sOrders">0</strong></div>
+  <div><small>Sales</small><strong>₹<span id="sSales">0</span></strong></div>
+  <div><small>Profit</small><strong>₹<span id="sProfit">0</span></strong></div>
+</div>
+
+<div class="admin-grid">
+<section class="panel">
+<h2>Add / Edit Product Listing</h2>
+<form id="productForm">
+<input id="pName" placeholder="Product name" required>
+<select id="pCat"><option>Hoodies</option><option>Sets</option><option>Sweatshirts</option><option>Jackets</option><option>T-Shirts</option><option>Bottom Wear</option></select>
+<div class="row"><input id="pPrice" type="number" placeholder="Selling price ₹" required><input id="pMrp" type="number" placeholder="MRP ₹ (optional)"></div>
+<input id="pCost" type="number" placeholder="Purchase cost ₹" required>
+<input id="pSizes" placeholder="Sizes: 0-1Y, 1-2Y, 2-3Y, 3-4Y, 4-5Y, 5-6Y" required>
+<input id="pStock" type="number" placeholder="Opening stock" required>
+<label class="file-label">Product image <input id="pImageFile" type="file" accept="image/*"></label>
+<input id="pImage" placeholder="Or paste image URL (optional)">
+<textarea id="pDesc" placeholder="Product description"></textarea>
+<button class="btn" type="submit">SAVE PRODUCT</button>
+</form>
+<p class="hint">You can change product photo, selling rate, MRP, sizes and description from here.</p>
+</section>
+
+<section class="panel">
+<h2>Purchase / Stock In</h2>
+<form id="purchaseForm">
+<select id="purchaseProduct"></select>
+<input id="purchaseQty" type="number" min="1" placeholder="Quantity" required>
+<input id="purchaseCost" type="number" min="0" placeholder="Cost per piece ₹" required>
+<button class="btn" type="submit">ADD STOCK</button>
+</form>
+</section>
+</div>
+
+<section class="panel">
+<h2>Product & Stock</h2>
+<div id="adminProducts"></div>
+</section>
+
+<section class="panel">
+<h2>Orders & Sales</h2>
+<div id="adminOrders"></div>
+</section>
+</main>
+<script src="app.js"></script>
+</body>
+</html>
