@@ -2,38 +2,43 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#ffffff">
-  <meta name="description" content="Nini Garments - 0 to 6 Years Kids Wear">
 
-  <title>Nini Garments | 0–6 Years Kids Wear</title>
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <title>Nini Garments | Kids Fashion 0–6 Years</title>
+
+  <meta
+    name="description"
+    content="Shop stylish and comfortable kids clothing from Nini Garments for children aged 0–6 years."
+  >
 
   <style>
+
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
     }
 
-    html {
-      scroll-behavior: smooth;
-    }
-
     body {
-      font-family: "Nunito", sans-serif;
-      background: #ffffff;
-      color: #202124;
-      padding-bottom: 78px;
+      font-family:
+        Inter,
+        Arial,
+        Helvetica,
+        sans-serif;
+
+      background: #fafafa;
+      color: #222;
+      line-height: 1.5;
     }
 
     button,
-    a,
+    input,
     select {
-      font-family: inherit;
+      font: inherit;
     }
 
     button {
@@ -45,96 +50,1173 @@
       color: inherit;
     }
 
-    /* =========================
-       TOP HEADER
-    ========================= */
 
-    .mobile-header {
+    /* =========================
+       HEADER
+       ========================= */
+
+    header {
       position: sticky;
       top: 0;
       z-index: 1000;
-      background: rgba(255,255,255,.97);
+
+      background: rgba(255,255,255,0.96);
+      border-bottom: 1px solid #eee;
       backdrop-filter: blur(12px);
-      border-bottom: 1px solid #f1f1f1;
     }
 
-    .header-main {
-      height: 76px;
-      display: grid;
-      grid-template-columns: 48px 1fr 48px 48px;
+    .header-inner {
+      max-width: 1200px;
+      margin: auto;
+
+      min-height: 72px;
+
+      display: flex;
       align-items: center;
-      gap: 4px;
-      padding: 6px 12px;
+      justify-content: space-between;
+
+      padding: 0 20px;
+      gap: 20px;
+    }
+
+    .logo {
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -1px;
+    }
+
+    .logo span {
+      font-weight: 400;
+    }
+
+    nav {
+      display: flex;
+      gap: 25px;
+      align-items: center;
+    }
+
+    nav a {
+      font-size: 14px;
+      font-weight: 600;
+      color: #444;
+    }
+
+    nav a:hover {
+      color: #000;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
 
     .icon-btn {
-      width: 44px;
-      height: 44px;
-      border: 0;
-      background: transparent;
+      border: 1px solid #ddd;
+      background: #fff;
+
+      width: 42px;
+      height: 42px;
+
       border-radius: 50%;
-      display: grid;
-      place-items: center;
-      font-size: 23px;
-      color: #222;
-    }
 
-    .icon-btn:active {
-      background: #f7f7f7;
-    }
-
-    .brand {
-      text-align: center;
       display: flex;
-      justify-content: center;
       align-items: center;
+      justify-content: center;
+
+      font-size: 18px;
     }
 
-    .brand img {
-      width: 116px;
-      height: auto;
-      max-height: 64px;
-      object-fit: contain;
-    }
-
-    .cart-button {
+    .cart-btn {
       position: relative;
     }
 
-    .cart-badge {
+    #cartCount {
       position: absolute;
-      top: 1px;
-      right: 0;
-      min-width: 20px;
-      height: 20px;
-      padding: 0 5px;
-      border-radius: 20px;
-      background: #f23b72;
-      color: white;
+
+      top: -4px;
+      right: -3px;
+
+      min-width: 19px;
+      height: 19px;
+
+      border-radius: 50%;
+
+      background: #111;
+      color: #fff;
+
       font-size: 11px;
-      font-weight: 900;
-      display: grid;
-      place-items: center;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
-    .brand-tagline {
-      text-align: center;
-      font-size: 9px;
-      font-weight: 800;
-      letter-spacing: 2px;
-      color: #2381c4;
-      margin-top: -3px;
-      padding-bottom: 7px;
-    }
 
     /* =========================
        HERO
-    ========================= */
+       ========================= */
 
     .hero {
-      margin: 12px;
-      border-radius: 24px;
-      overflow: hidden;
+      max-width: 1200px;
+      margin: auto;
+
+      padding: 70px 20px 50px;
+
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+
+      gap: 50px;
+      align-items: center;
+    }
+
+    .hero-content h1 {
+      font-size: clamp(42px, 6vw, 72px);
+      line-height: 1.02;
+
+      letter-spacing: -3px;
+
+      margin-bottom: 22px;
+    }
+
+    .hero-content h1 span {
+      display: block;
+      color: #777;
+    }
+
+    .hero-content p {
+      max-width: 500px;
+
+      color: #666;
+      font-size: 17px;
+
+      margin-bottom: 30px;
+    }
+
+    .primary-btn {
+      border: none;
+
+      background: #111;
+      color: #fff;
+
+      padding: 14px 24px;
+
+      border-radius: 8px;
+
+      font-weight: 700;
+    }
+
+    .primary-btn:hover {
+      opacity: .85;
+    }
+
+    .hero-image {
+      min-height: 430px;
+
+      border-radius: 20px;
+
       background:
-        radial-gradient(circle at 85% 20%, rgba(255,255,255,.9) 0 5%, transparent 6%),
-        radial-gradient(circle at 75% 65
+        linear-gradient(
+          135deg,
+          #f1f1f1,
+          #e5e5e5
+        );
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      font-size: 80px;
+    }
+
+
+    /* =========================
+       CATEGORY
+       ========================= */
+
+    .section {
+      max-width: 1200px;
+      margin: auto;
+
+      padding: 50px 20px;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+
+      margin-bottom: 25px;
+      gap: 20px;
+    }
+
+    .section-header h2 {
+      font-size: 32px;
+      letter-spacing: -1px;
+    }
+
+    .section-header p {
+      color: #777;
+    }
+
+    .categories {
+      display: grid;
+
+      grid-template-columns:
+        repeat(4, 1fr);
+
+      gap: 15px;
+    }
+
+    .category-card {
+      min-height: 150px;
+
+      border: 1px solid #eee;
+
+      border-radius: 15px;
+
+      background: #fff;
+
+      padding: 20px;
+
+      display: flex;
+      flex-direction: column;
+
+      justify-content: end;
+
+      transition: .2s;
+    }
+
+    .category-card:hover {
+      transform: translateY(-3px);
+      border-color: #ccc;
+    }
+
+    .category-card strong {
+      font-size: 18px;
+    }
+
+    .category-card span {
+      color: #777;
+      font-size: 13px;
+    }
+
+
+    /* =========================
+       SHOP TOOLBAR
+       ========================= */
+
+    .shop-toolbar {
+      display: flex;
+
+      justify-content: space-between;
+      align-items: center;
+
+      gap: 15px;
+
+      margin-bottom: 25px;
+    }
+
+    .search-box {
+      width: 300px;
+      max-width: 100%;
+
+      border: 1px solid #ddd;
+
+      border-radius: 8px;
+
+      background: #fff;
+
+      padding: 12px 15px;
+
+      outline: none;
+    }
+
+
+    /* =========================
+       PRODUCTS
+       ========================= */
+
+    #products {
+      display: grid;
+
+      grid-template-columns:
+        repeat(4, 1fr);
+
+      gap: 20px;
+    }
+
+    .product {
+      background: #fff;
+
+      border: 1px solid #eee;
+
+      border-radius: 15px;
+
+      overflow: hidden;
+
+      transition: .2s;
+    }
+
+    .product:hover {
+      transform: translateY(-3px);
+      box-shadow:
+        0 8px 30px rgba(0,0,0,.06);
+    }
+
+    .product img {
+      width: 100%;
+      height: 280px;
+
+      object-fit: cover;
+
+      background: #f2f2f2;
+    }
+
+    .product-info {
+      padding: 16px;
+    }
+
+    .product-info h3 {
+      font-size: 17px;
+      margin-bottom: 7px;
+    }
+
+    .price {
+      font-size: 19px;
+      font-weight: 800;
+
+      margin-bottom: 6px;
+    }
+
+    .stock {
+      color: #777;
+      font-size: 13px;
+
+      margin-bottom: 12px;
+    }
+
+    .product select {
+      width: 100%;
+
+      border: 1px solid #ddd;
+
+      padding: 10px;
+
+      border-radius: 7px;
+
+      background: #fff;
+
+      margin-bottom: 10px;
+    }
+
+    .product button {
+      width: 100%;
+
+      border: none;
+
+      padding: 11px;
+
+      border-radius: 7px;
+
+      background: #111;
+      color: #fff;
+
+      font-weight: 700;
+    }
+
+    .product button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+
+    /* =========================
+       CART MODAL
+       ========================= */
+
+    #cartModal {
+      display: none;
+
+      position: fixed;
+
+      inset: 0;
+
+      z-index: 2000;
+
+      background: rgba(0,0,0,.55);
+
+      align-items: center;
+      justify-content: center;
+
+      padding: 20px;
+    }
+
+    .cart-box {
+      width: 100%;
+      max-width: 520px;
+
+      max-height: 85vh;
+
+      overflow-y: auto;
+
+      background: #fff;
+
+      border-radius: 15px;
+
+      padding: 25px;
+    }
+
+    .cart-header {
+      display: flex;
+
+      align-items: center;
+      justify-content: space-between;
+
+      margin-bottom: 20px;
+    }
+
+    .cart-header h2 {
+      font-size: 25px;
+    }
+
+    .close-btn {
+      border: none;
+
+      background: #f2f2f2;
+
+      width: 38px;
+      height: 38px;
+
+      border-radius: 50%;
+    }
+
+    .cart-line {
+      display: grid;
+
+      grid-template-columns: 1fr auto auto;
+
+      gap: 12px;
+
+      align-items: center;
+
+      padding: 14px 0;
+
+      border-bottom: 1px solid #eee;
+    }
+
+    .cart-line button {
+      border: none;
+
+      background: #eee;
+
+      padding: 6px 9px;
+
+      border-radius: 5px;
+
+      font-size: 12px;
+    }
+
+    .cart-total {
+      display: flex;
+
+      justify-content: space-between;
+
+      font-size: 20px;
+      font-weight: 800;
+
+      margin: 20px 0;
+    }
+
+    .checkout-btn {
+      width: 100%;
+
+      border: none;
+
+      background: #111;
+      color: #fff;
+
+      padding: 14px;
+
+      border-radius: 8px;
+
+      font-weight: 700;
+    }
+
+
+    /* =========================
+       FOOTER
+       ========================= */
+
+    footer {
+      border-top: 1px solid #eee;
+
+      margin-top: 50px;
+
+      background: #fff;
+    }
+
+    .footer-inner {
+      max-width: 1200px;
+      margin: auto;
+
+      padding: 40px 20px;
+
+      display: grid;
+
+      grid-template-columns:
+        2fr 1fr 1fr;
+
+      gap: 30px;
+    }
+
+    .footer-inner h3 {
+      margin-bottom: 10px;
+    }
+
+    .footer-inner p,
+    .footer-inner a {
+      color: #777;
+
+      font-size: 14px;
+    }
+
+    .footer-links {
+      display: flex;
+      flex-direction: column;
+
+      gap: 8px;
+    }
+
+    .copyright {
+      text-align: center;
+
+      padding: 15px;
+
+      border-top: 1px solid #eee;
+
+      color: #888;
+
+      font-size: 13px;
+    }
+
+
+    /* =========================
+       MOBILE
+       ========================= */
+
+    @media (max-width: 900px) {
+
+      nav {
+        display: none;
+      }
+
+      .hero {
+        grid-template-columns: 1fr;
+
+        padding-top: 45px;
+      }
+
+      .hero-image {
+        min-height: 300px;
+      }
+
+      .categories {
+        grid-template-columns:
+          repeat(2, 1fr);
+      }
+
+      #products {
+        grid-template-columns:
+          repeat(2, 1fr);
+      }
+
+      .product img {
+        height: 220px;
+      }
+
+      .footer-inner {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+
+    @media (max-width: 600px) {
+
+      .header-inner {
+        min-height: 62px;
+        padding: 0 14px;
+      }
+
+      .logo {
+        font-size: 22px;
+      }
+
+      .hero {
+        padding: 40px 15px;
+      }
+
+      .hero-content h1 {
+        font-size: 44px;
+      }
+
+      .section {
+        padding: 35px 15px;
+      }
+
+      .section-header {
+        display: block;
+      }
+
+      .section-header h2 {
+        margin-bottom: 5px;
+      }
+
+      .categories {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      #products {
+        grid-template-columns: 1fr 1fr;
+
+        gap: 12px;
+      }
+
+      .product img {
+        height: 190px;
+      }
+
+      .product-info {
+        padding: 12px;
+      }
+
+      .product-info h3 {
+        font-size: 15px;
+      }
+
+      .price {
+        font-size: 17px;
+      }
+
+      .shop-toolbar {
+        display: block;
+      }
+
+      .search-box {
+        width: 100%;
+      }
+
+      .footer-inner {
+        grid-template-columns: 1fr;
+      }
+
+      .cart-line {
+        grid-template-columns: 1fr auto;
+      }
+
+      .cart-line button {
+        grid-column: 2;
+      }
+    }
+
+  </style>
+</head>
+
+
+<body>
+
+
+  <!-- =========================
+       HEADER
+       ========================= -->
+
+  <header>
+
+    <div class="header-inner">
+
+      <a
+        href="#home"
+        class="logo"
+      >
+        Nini<span>Garments</span>
+      </a>
+
+
+      <nav>
+
+        <a href="#home">
+          Home
+        </a>
+
+        <a href="#shop">
+          Shop
+        </a>
+
+        <a href="#categories">
+          Categories
+        </a>
+
+        <a href="#about">
+          About
+        </a>
+
+      </nav>
+
+
+      <div class="header-actions">
+
+        <button
+          class="icon-btn"
+          onclick="openCart()"
+          aria-label="Shopping cart"
+        >
+          🛒
+
+          <span id="cartCount">
+            0
+          </span>
+
+        </button>
+
+      </div>
+
+    </div>
+
+  </header>
+
+
+
+  <!-- =========================
+       HERO
+       ========================= -->
+
+  <main>
+
+    <section
+      class="hero"
+      id="home"
+    >
+
+      <div class="hero-content">
+
+        <h1>
+          Little styles.
+          <span>Big smiles.</span>
+        </h1>
+
+        <p>
+          Comfortable and stylish clothing
+          made for little ones from
+          0–6 years.
+        </p>
+
+        <a
+          href="#shop"
+          class="primary-btn"
+        >
+          SHOP COLLECTION
+        </a>
+
+      </div>
+
+
+      <div class="hero-image">
+        👶
+      </div>
+
+    </section>
+
+
+
+    <!-- =========================
+         CATEGORIES
+         ========================= -->
+
+    <section
+      class="section"
+      id="categories"
+    >
+
+      <div class="section-header">
+
+        <div>
+
+          <h2>
+            Shop by category
+          </h2>
+
+          <p>
+            Find something special
+            for every little one.
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <div class="categories">
+
+        <button
+          class="category-card"
+          onclick="filterCat('Hoodies')"
+        >
+          <strong>
+            Hoodies
+          </strong>
+
+          <span>
+            Cozy everyday styles
+          </span>
+        </button>
+
+
+        <button
+          class="category-card"
+          onclick="filterCat('Winter Wear')"
+        >
+          <strong>
+            Winter Wear
+          </strong>
+
+          <span>
+            Warm & comfortable
+          </span>
+        </button>
+
+
+        <button
+          class="category-card"
+          onclick="filterCat('Sets')"
+        >
+          <strong>
+            Kids Sets
+          </strong>
+
+          <span>
+            Ready-to-wear outfits
+          </span>
+        </button>
+
+
+        <button
+          class="category-card"
+          onclick="renderProducts(products)"
+        >
+          <strong>
+            All Collection
+          </strong>
+
+          <span>
+            Explore everything
+          </span>
+        </button>
+
+      </div>
+
+    </section>
+
+
+
+    <!-- =========================
+         SHOP
+         ========================= -->
+
+    <section
+      class="section"
+      id="shop"
+    >
+
+      <div class="section-header">
+
+        <div>
+
+          <h2>
+            Latest collection
+          </h2>
+
+          <p>
+            New styles for little explorers.
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <div class="shop-toolbar">
+
+        <input
+          class="search-box"
+          id="productSearch"
+          type="search"
+          placeholder="Search kids clothing..."
+        >
+
+      </div>
+
+
+      <div id="products">
+
+        <p>
+          Loading products...
+        </p>
+
+      </div>
+
+    </section>
+
+
+
+    <!-- =========================
+         ABOUT
+         ========================= -->
+
+    <section
+      class="section"
+      id="about"
+    >
+
+      <div class="section-header">
+
+        <div>
+
+          <h2>
+            About Nini Garments
+          </h2>
+
+          <p>
+            Kids clothing made with
+            comfort in mind.
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <p style="max-width:700px;color:#666;">
+
+        Nini Garments brings comfortable,
+        stylish and affordable clothing
+        for children from 0–6 years.
+        We focus on simple designs,
+        comfortable fabrics and everyday
+        wear that little ones can enjoy.
+
+      </p>
+
+    </section>
+
+  </main>
+
+
+
+  <!-- =========================
+       CART
+       ========================= -->
+
+  <div
+    id="cartModal"
+    onclick="
+      if(event.target === this)
+        closeCart()
+    "
+  >
+
+    <div class="cart-box">
+
+      <div class="cart-header">
+
+        <h2>
+          Your Cart
+        </h2>
+
+        <button
+          class="close-btn"
+          onclick="closeCart()"
+        >
+          ✕
+        </button>
+
+      </div>
+
+
+      <div id="cartItems">
+
+        Your cart is empty.
+
+      </div>
+
+
+      <div class="cart-total">
+
+        <span>
+          Total
+        </span>
+
+        <span>
+          ₹<span id="cartTotal">0</span>
+        </span>
+
+      </div>
+
+
+      <button
+        class="checkout-btn"
+        onclick="placeOrder()"
+      >
+        PLACE ORDER
+      </button>
+
+    </div>
+
+  </div>
+
+
+
+  <!-- =========================
+       FOOTER
+       ========================= -->
+
+  <footer>
+
+    <div class="footer-inner">
+
+      <div>
+
+        <h3>
+          Nini Garments
+        </h3>
+
+        <p>
+          Kids fashion for ages 0–6 years.
+          Comfortable, simple and stylish.
+        </p>
+
+      </div>
+
+
+      <div>
+
+        <h3>
+          Shop
+        </h3>
+
+        <div class="footer-links">
+
+          <a href="#shop">
+            All Products
+          </a>
+
+          <a href="#categories">
+            Categories
+          </a>
+
+        </div>
+
+      </div>
+
+
+      <div>
+
+        <h3>
+          Help
+        </h3>
+
+        <div class="footer-links">
+
+          <a href="#">
+            Contact
+          </a>
+
+          <a href="#">
+            Shipping
+          </a>
+
+          <a href="#">
+            Returns
+          </a>
+
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <div class="copyright">
+
+      © 2026 Nini Garments.
+      All rights reserved.
+
+    </div>
+
+  </footer>
+
+
+
+  <!-- =========================
+       SEARCH
+       ========================= -->
+
+  <script>
+
+    const search =
+      document.getElementById(
+        "productSearch"
+      );
+
+
+    if (search) {
+
+      search.addEventListener(
+        "input",
+        function () {
+
+          const query =
+            this.value
+              .trim()
+              .toLowerCase();
+
+
+          const filtered =
+            products.filter(product => {
+
+              const name =
+                String(
+                  product.name || ""
+                ).toLowerCase();
+
+
+              const category =
+                String(
+                  product.category ||
+                  product.cat ||
+                  ""
+                ).toLowerCase();
+
+
+              return (
+                name.includes(query) ||
+                category.includes(query)
+              );
+
+            });
+
+
+          renderProducts(filtered);
+
+        }
+      );
+
+    }
+
+  </script>
+
+
+  <!-- APP -->
+  <script src="app.js"></script>
+
+</body>
+</html>
