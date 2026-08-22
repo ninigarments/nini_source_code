@@ -1,309 +1,33 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <title>Nini Garments | Premium Kids Wear 0–6 Years</title>
-
-  <meta
-    name="description"
-    content="Nini Garments – stylish, comfortable and affordable kids clothing for ages 0–6 years."
-  >
-
-  <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Nini Garments - premium kidswear for little ones aged 0–6 years.">
+<title>Nini Garments | Premium Kidswear</title>
+<link rel="stylesheet" href="style.css">
 </head>
-
 <body>
-
-  <!-- TOP BAR -->
-  <div class="top-bar">
-    <div>🎁 Premium Kids Wear</div>
-    <div>🚚 Fast Delivery Across India</div>
-    <div>↩️ Easy Returns</div>
-  </div>
-
-
-  <!-- HEADER -->
-  <header class="header">
-    <div class="header-inner">
-
-      <a href="#home" class="logo">
-        <img src="nini-logo.jpeg" alt="Nini Garments">
-      </a>
-
-      <nav class="nav">
-        <a href="#home">Home</a>
-        <a href="#shop">Shop</a>
-        <a href="#categories">Categories</a>
-        <a href="#about">About Us</a>
-      </nav>
-
-      <div class="header-actions">
-        <button class="cart-btn" id="cartBtn" type="button">
-          🛒 <span id="cartCount">0</span>
-        </button>
-
-        <a href="admin.html" class="admin-btn">Admin</a>
-      </div>
-
-    </div>
-  </header>
-
-
-  <main>
-
-    <!-- HERO -->
-    <section class="hero" id="home">
-
-      <div class="hero-content">
-
-        <p class="hero-small-title">
-          PREMIUM QUALITY KIDS WEAR
-        </p>
-
-        <h1>
-          Comfort &amp; Style<br>
-          for <span>Little Ones</span>
-        </h1>
-
-        <p class="hero-description">
-          Trendy hoodies, sets &amp; kids clothing for
-          <strong>0–6 Years.</strong>
-        </p>
-
-        <a href="#shop" class="primary-btn">
-          SHOP NOW →
-        </a>
-
-      </div>
-
-      <div class="hero-visual">
-
-        <div class="hero-circle">
-          <div class="hero-brand">NINI</div>
-          <div class="hero-age">0–6 YEARS</div>
-        </div>
-
-      </div>
-
-    </section>
-
-
-    <!-- FEATURES -->
-    <section class="features">
-
-      <div class="feature">
-        <span>✨</span>
-        <div>
-          <strong>Premium Fabric</strong>
-          <small>Soft &amp; comfortable</small>
-        </div>
-      </div>
-
-      <div class="feature">
-        <span>🛡️</span>
-        <div>
-          <strong>Safe for Kids</strong>
-          <small>Made with care</small>
-        </div>
-      </div>
-
-      <div class="feature">
-        <span>🚚</span>
-        <div>
-          <strong>Fast Delivery</strong>
-          <small>Across India</small>
-        </div>
-      </div>
-
-      <div class="feature">
-        <span>↩️</span>
-        <div>
-          <strong>Easy Returns</strong>
-          <small>Simple &amp; hassle-free</small>
-        </div>
-      </div>
-
-    </section>
-
-
-    <!-- SHOP -->
-    <section class="shop-section" id="shop">
-
-      <div class="section-heading">
-        <p>OUR COLLECTION</p>
-        <h2>Shop Kids Wear</h2>
-        <span>
-          Cute styles made for your little ones
-        </span>
-      </div>
-
-      <!-- Products will be loaded here -->
-      <div class="products-grid" id="productsGrid">
-
-        <div class="loading">
-          Loading products...
-        </div>
-
-      </div>
-
-    </section>
-
-
-    <!-- CATEGORIES -->
-    <section class="categories-section" id="categories">
-
-      <div class="section-heading">
-        <p>EXPLORE</p>
-        <h2>Shop By Category</h2>
-        <span>Find something perfect for every little one</span>
-      </div>
-
-      <div class="category-grid">
-
-        <a href="#shop" class="category-card">
-          <div class="category-icon">🧥</div>
-          <h3>Hoodies</h3>
-          <p>Warm &amp; stylish</p>
-        </a>
-
-        <a href="#shop" class="category-card">
-          <div class="category-icon">👕</div>
-          <h3>Kids Sets</h3>
-          <p>Perfect everyday wear</p>
-        </a>
-
-        <a href="#shop" class="category-card">
-          <div class="category-icon">❄️</div>
-          <h3>Winter Wear</h3>
-          <p>Cozy &amp; comfortable</p>
-        </a>
-
-        <a href="#shop" class="category-card">
-          <div class="category-icon">🧸</div>
-          <h3>New Arrivals</h3>
-          <p>Fresh styles for kids</p>
-        </a>
-
-      </div>
-
-    </section>
-
-
-    <!-- ABOUT -->
-    <section class="about-section" id="about">
-
-      <div class="about-content">
-
-        <p class="section-label">ABOUT NINI GARMENTS</p>
-
-        <h2>
-          Little Clothes,
-          <span>Big Smiles.</span>
-        </h2>
-
-        <p>
-          Nini Garments brings stylish, comfortable and affordable
-          clothing for little ones aged 0–6 years.
-        </p>
-
-        <p>
-          We believe children's clothing should be comfortable,
-          practical and full of style — because every little one
-          deserves to look and feel special.
-        </p>
-
-      </div>
-
-      <div class="about-badge">
-        <strong>NINI</strong>
-        <span>0–6 YEARS</span>
-      </div>
-
-    </section>
-
-  </main>
-
-
-  <!-- CART DRAWER -->
-  <div class="cart-overlay" id="cartOverlay"></div>
-
-  <aside class="cart-drawer" id="cartDrawer">
-
-    <div class="cart-header">
-      <h2>Your Cart</h2>
-
-      <button id="closeCart" type="button">
-        ✕
-      </button>
-    </div>
-
-    <div class="cart-items" id="cartItems">
-
-      <div class="empty-cart">
-        <div>🛒</div>
-        <p>Your cart is empty</p>
-        <button id="continueShopping" type="button">
-          Continue Shopping
-        </button>
-      </div>
-
-    </div>
-
-    <div class="cart-footer">
-
-      <div class="cart-total">
-        <span>Total</span>
-        <strong id="cartTotal">₹0</strong>
-      </div>
-
-      <button class="checkout-btn" id="checkoutBtn" type="button">
-        Proceed to Checkout
-      </button>
-
-    </div>
-
-  </aside>
-
-
-  <!-- FOOTER -->
-  <footer class="footer">
-
-    <div class="footer-inner">
-
-      <div class="footer-brand">
-        <img src="nini-logo.jpeg" alt="Nini Garments">
-        <p>
-          Premium kids wear for little ones aged 0–6 years.
-        </p>
-      </div>
-
-      <div class="footer-links">
-        <h3>Quick Links</h3>
-        <a href="#home">Home</a>
-        <a href="#shop">Shop</a>
-        <a href="#categories">Categories</a>
-        <a href="#about">About Us</a>
-      </div>
-
-      <div class="footer-links">
-        <h3>Customer Care</h3>
-        <a href="#">Shipping Information</a>
-        <a href="#">Returns &amp; Refunds</a>
-        <a href="#">Contact Us</a>
-      </div>
-
-    </div>
-
-    <div class="footer-bottom">
-      © 2026 Nini Garments. All rights reserved.
-    </div>
-
-  </footer>
-
-
-  <script src="app.js"></script>
-
+<div class="announcement"><div class="container announcement-inner"><span>✨ Premium Kidswear</span><span>🚚 Fast Delivery Across India</span><span>↩ Easy Returns</span></div></div>
+<header class="site-header"><div class="container header-inner">
+<a href="#home" class="brand"><img src="nini-logo.jpeg" alt="Nini Garments logo"><div class="brand-text"><strong>NINI</strong><small>GARMENTS</small></div></a>
+<nav class="main-nav"><a href="#home">Home</a><a href="#shop">Shop</a><a href="#categories">Categories</a><a href="#about">About Us</a></nav>
+<div class="header-actions"><button class="cart-button" onclick="openCart()">🛒 <span id="cartCount">0</span></button><a href="admin.html" class="admin-button">Admin</a></div>
+</div></header>
+<main>
+<section id="home" class="hero"><div class="container hero-grid"><div class="hero-copy"><p class="eyebrow">PREMIUM QUALITY KIDSWEAR</p><h1>Little looks.<br><span>Big smiles.</span></h1><p class="hero-description">Stylish, comfortable and adorable clothing made for little ones from 0–6 years.</p><div class="hero-actions"><a href="#shop" class="btn btn-primary">Shop Collection <span>→</span></a><a href="#categories" class="btn btn-secondary">Explore Categories</a></div><div class="hero-trust"><span>✓ Soft fabrics</span><span>✓ Kids-friendly</span><span>✓ Easy returns</span></div></div><div class="hero-visual"><div class="hero-card hero-card-main"><div class="hero-badge">0–6 YEARS</div><div class="hero-logo">NINI</div><p>Comfort • Style • Joy</p></div><div class="floating-card floating-one">🧸 Made for little ones</div><div class="floating-card floating-two">💗 Loved by parents</div></div></div></section>
+<section class="benefits"><div class="container benefits-grid"><div class="benefit"><div class="benefit-icon">✦</div><div><strong>Premium Fabric</strong><span>Soft & comfortable</span></div></div><div class="benefit"><div class="benefit-icon">♡</div><div><strong>Made for Kids</strong><span>Comfort first</span></div></div><div class="benefit"><div class="benefit-icon">🚚</div><div><strong>Fast Delivery</strong><span>Across India</span></div></div><div class="benefit"><div class="benefit-icon">↩</div><div><strong>Easy Returns</strong><span>Simple & hassle-free</span></div></div></div></section>
+<section id="categories" class="section categories-section"><div class="container"><div class="section-heading"><div><p class="eyebrow">SHOP BY STYLE</p><h2>Find their <span>favorite</span></h2></div><p>Everyday essentials designed to keep little ones comfy and cute.</p></div><div class="category-grid">
+<button class="category-card category-pink" onclick="filterCat('Hoodies')"><div class="category-art">🧸</div><div><h3>Hoodies</h3><p>Warm & stylish</p><span>Shop now →</span></div></button>
+<button class="category-card category-blue" onclick="filterCat('Kids Sets')"><div class="category-art">👕</div><div><h3>Kids Sets</h3><p>Perfect everyday wear</p><span>Shop now →</span></div></button>
+<button class="category-card category-green" onclick="filterCat('Clothing')"><div class="category-art">🌿</div><div><h3>Kids Clothing</h3><p>Comfort for every day</p><span>Shop now →</span></div></button>
+</div></div></section>
+<section id="shop" class="section shop-section"><div class="container"><div class="section-heading shop-heading"><div><p class="eyebrow">OUR COLLECTION</p><h2>Shop <span>Kidswear</span></h2></div><p>Fresh styles for your little ones.</p></div><div id="products" class="products-grid"><div class="loading-state">Loading products...</div></div></div></section>
+<section id="about" class="about-section"><div class="container about-grid"><div class="about-art"><div class="about-circle"><strong>NINI</strong><span>0–6 YEARS</span></div></div><div class="about-copy"><p class="eyebrow">WHY NINI?</p><h2>Made for childhood.<br><span>Chosen by parents.</span></h2><p>At Nini Garments, we believe kidswear should look beautiful, feel comfortable and be easy for parents to choose.</p><div class="about-points"><div><span>01</span><strong>Comfort-first designs</strong></div><div><span>02</span><strong>Everyday styles for little ones</strong></div><div><span>03</span><strong>Quality without unnecessary fuss</strong></div></div></div></div></section>
+<section class="cta-section"><div class="container cta-inner"><div><p class="eyebrow">READY FOR A LITTLE STYLE?</p><h2>Dress them happy. 💗</h2></div><a href="#shop" class="btn btn-light">Shop Now →</a></div></section>
+</main>
+<footer class="site-footer"><div class="container footer-grid"><div class="footer-brand"><div class="footer-logo">NINI</div><p>Premium kidswear for little ones aged 0–6 years.</p></div><div><h4>Shop</h4><a href="#shop">All Products</a><a href="#categories">Categories</a><a href="#shop">New Arrivals</a></div><div><h4>Help</h4><a href="#about">About Us</a><a href="#about">Returns</a><a href="#about">Delivery</a></div><div><h4>Connect</h4><p>Follow Nini Garments</p><div class="socials"><span>Instagram</span><span>Facebook</span></div></div></div><div class="container footer-bottom"><span>© 2026 Nini Garments. All rights reserved.</span><span>Made with love for little ones.</span></div></footer>
+<div id="cartModal" class="cart-modal" onclick="if(event.target === this) closeCart()"><div class="cart-panel"><div class="cart-header"><div><p class="eyebrow">YOUR BAG</p><h2>Shopping Cart</h2></div><button class="close-cart" onclick="closeCart()">×</button></div><div id="cartItems" class="cart-items">Your cart is empty.</div><div class="cart-summary"><span>Total</span><strong>₹<span id="cartTotal">0</span></strong></div><button class="btn btn-primary cart-checkout" onclick="placeOrder()">Place Order →</button></div></div>
+<script src="app.js"></script>
 </body>
 </html>
