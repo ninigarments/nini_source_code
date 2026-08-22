@@ -1,152 +1,155 @@
-const KEY = "niniStoreV1";
+const API_URL = "https://nini-api.msninigarments7368.workers.dev";
 
-const demo = [
-  {
-    name: "Dino Hoodie",
-    cat: "Hoodies",
-    price: 699,
-    cost: 350,
-    sizes: ["0-1Y", "1-2Y", "2-3Y", "3-4Y", "4-5Y", "5-6Y"],
-    stock: 25,
-    image: ""
-  },
-  {
-    name: "Bunny Hoodie",
-    cat: "Hoodies",
-    price: 699,
-    cost: 350,
-    sizes: ["0-1Y", "1-2Y", "2-3Y", "3-4Y", "4-5Y", "5-6Y"],
-    stock: 20,
-    image: ""
-  },
-  {
-    name: "Bear Hoodie",
-    cat: "Hoodies",
-    price: 699,
-    cost: 360,
-    sizes: ["0-1Y", "1-2Y", "2-3Y", "3-4Y", "4-5Y", "5-6Y"],
-    stock: 18,
-    image: ""
-  },
-  {
-    name: "Cool Hoodie",
-    cat: "Hoodies",
-    price: 699,
-    cost: 340,
-    sizes: ["0-1Y", "1-2Y", "2-3Y", "3-4Y", "4-5Y", "5-6Y"],
-    stock: 16,
-    image: ""
+let products = [];
+let cart = [];
+
+
+// =========================
+// LOAD PRODUCTS FROM D1 API
+// =========================
+
+async function loadProducts() {
+  try {
+    const response = await fetch(`${API_URL}/api/products`);
+
+    if (!response.ok) {
+      throw new Error("Products load nahi ho rahe");
+    }
+
+    const data = await response.json();
+
+    products = data.products || [];
+
+    renderProducts(products);
+    updateCartCount();
+
+  } catch (error) {
+    console.error(error);
+
+    const el = document.getElementById("products");
+
+    if (el) {
+      el.innerHTML = `
+        <p>Products load nahi ho rahe. Please refresh.</p>
+      `;
+    }
   }
-];
-
-let db = JSON.parse(localStorage.getItem(KEY) || "null") || {
-  products: demo,
-  orders: [],
-  purchases: []
-};
-
-
-/* =========================================================
-   UPDATE EXISTING PRODUCTS
-   ========================================================= */
-
-db.products.forEach(product => {
-  if (!Array.isArray(product.sizes)) {
-    product.sizes = [];
-  }
-
-  // Add 5-6Y if it does not already exist
-  if (!product.sizes.includes("5-6Y")) {
-    product.sizes.push("5-6Y");
-  }
-});
-
-save();
-
-
-/* =========================================================
-   SAVE DATABASE
-   ========================================================= */
-
-function save() {
-  localStorage.setItem(KEY, JSON.stringify(db));
 }
 
 
-/* =========================================================
-   MONEY FORMAT
-   ========================================================= */
+// =========================
+// MONEY
+// =========================
 
-function money(n) {
-  return Number(n || 0).toLocaleString("en-IN");
+function money(value) {
+  return Number(value || 0).toLocaleString("en-IN");
 }
 
 
-/* =========================================================
-   RENDER PRODUCTS
-   ========================================================= */
+// =========================
+// RENDER PRODUCTS
+// =========================
 
-function renderProducts(list = db.products) {
+function renderProducts(list = products) {
+
   const el = document.getElementById("products");
 
   if (!el) return;
 
-  el.innerHTML = list.map((p, i) => `
-    <article class="product">
+  if (!list.length) {
+    el.innerHTML = "<p>No products available.</p>";
+    return;
+  }
 
-      <img 
-        src="${p.image || 'assets/nini-logo.png'}" 
-        alt="${p.name}"
-      >
+  el.innerHTML = list.map((product, index) => {
 
-      <div class="product-info">
+    const sizes = Array.isArray(product.sizes)
+      ? product.sizes
+      : [];
 
-        <h3>${p.name}</h3>
+    const availableSizes = sizes.filter(
+      item => Number(item.stock || 0) > 0
+    );
 
-        <div class="price">
-          ₹${money(p.price)}
-        </div>
+    const totalStock = sizes.reduce(
+      (total, item) =>
+        total + Number(item.stock || 0),
+      0
+    );
 
-        <div class="stock">
-          ${p.stock > 0
-            ? p.stock + " pcs available"
-            : "Out of Stock"}
-        </div>
+    return `
+      <article class="product">
 
-        <select id="size${i}">
-          ${p.sizes.map(size => `
-            <option value="${size}">
-              ${size}
-            </option>
-          `).join("")}
-        </select>
-
-        <button
-          ${p.stock <= 0 ? "disabled" : ""}
-          onclick="addCart(
-            ${i},
-            document.getElementById('size${i}').value
-          )"
+        <img
+          src="${product.image || "assets/nini-logo.png"}"
+          alt="${product.name || "Nini Garments"}"
         >
-          ADD TO CART
-        </button>
 
-      </div>
+        <div class="product-info">
 
-    </article>
-  `).join("");
+          <h3>${product.name || ""}</h3>
+
+          <div class="price">
+            ₹${money(product.price)}
+          </div>
+
+          <div class="stock">
+            ${
+              totalStock > 0
+                ? `${totalStock} pcs available`
+                : "Out of Stock"
+            }
+          </div>
+
+          ${
+            availableSizes.length
+              ? `
+                <select id="size-${index}">
+                  ${availableSizes.map(item => `
+                    <option value="${item.size}">
+                      ${item.size}
+                    </option>
+                  `).join("")}
+                </select>
+
+                <button
+                  onclick="
+                    addCart(
+                      ${index},
+                      document.getElementById('size-${index}').value
+                    )
+                  "
+                >
+                  ADD TO CART
+                </button>
+              `
+              : `
+                <button disabled>
+                  OUT OF STOCK
+                </button>
+              `
+          }
+
+        </div>
+
+      </article>
+    `;
+  }).join("");
 }
 
 
-/* =========================================================
-   CATEGORY FILTER
-   ========================================================= */
+// =========================
+// CATEGORY FILTER
+// =========================
 
-function filterCat(cat) {
+function filterCat(category) {
 
-  renderProducts(
-    db.products.filter(p => p.cat === cat)
+  const filtered = products.filter(product =>
+    product.category === category ||
+    product.cat === category
   );
+
+  renderProducts(filtered);
 
   const shop = document.getElementById("shop");
 
@@ -158,91 +161,179 @@ function filterCat(cat) {
 }
 
 
-/* =========================================================
-   CART
-   ========================================================= */
+// =========================
+// CART
+// =========================
 
-let cart = [];
+function addCart(index, size) {
 
+  const product = products[index];
 
-/* =========================================================
-   ADD TO CART
-   ========================================================= */
+  if (!product) return;
 
-function addCart(i, size) {
+  const sizeData = (product.sizes || []).find(
+    item => item.size === size
+  );
 
-  const p = db.products[i];
-
-  if (!p || p.stock <= 0) {
+  if (!sizeData || Number(sizeData.stock) <= 0) {
+    alert("This size is out of stock.");
     return;
   }
 
-  cart.push({
-    product: i,
-    size: size,
-    price: p.price,
-    name: p.name
-  });
+  const existing = cart.find(
+    item =>
+      item.product_id === product.id &&
+      item.size === size
+  );
 
-  const count = document.getElementById("cartCount");
+  if (existing) {
 
-  if (count) {
-    count.textContent = cart.length;
+    if (
+      existing.quantity >=
+      Number(sizeData.stock)
+    ) {
+      alert("Maximum available stock reached.");
+      return;
+    }
+
+    existing.quantity++;
+
+  } else {
+
+    cart.push({
+      product_id: product.id,
+      name: product.name,
+      size: size,
+      price: Number(product.price || 0),
+      quantity: 1
+    });
+
   }
+
+  updateCartCount();
 
   alert("Added to cart!");
 }
 
 
-/* =========================================================
-   OPEN CART
-   ========================================================= */
+// =========================
+// CART COUNT
+// =========================
+
+function updateCartCount() {
+
+  const count =
+    document.getElementById("cartCount");
+
+  if (!count) return;
+
+  count.textContent =
+    cart.reduce(
+      (total, item) =>
+        total + item.quantity,
+      0
+    );
+}
+
+
+// =========================
+// OPEN CART
+// =========================
 
 function openCart() {
 
-  const modal = document.getElementById("cartModal");
+  const modal =
+    document.getElementById("cartModal");
 
   if (!modal) return;
 
   modal.style.display = "flex";
 
-  const el = document.getElementById("cartItems");
+  const el =
+    document.getElementById("cartItems");
 
   if (!el) return;
 
-  el.innerHTML = cart.length
-    ? cart.map((item, i) => `
-        <div class="cart-line">
+  if (!cart.length) {
 
-          <span>
-            ${item.name} (${item.size})
-          </span>
+    el.innerHTML =
+      "Your cart is empty.";
 
-          <b>
-            ₹${money(item.price)}
-          </b>
+    const total =
+      document.getElementById("cartTotal");
 
-        </div>
-      `).join("")
-    : "Your cart is empty.";
+    if (total) {
+      total.textContent = "0";
+    }
 
-  const total = cart.reduce(
-    (sum, item) => sum + item.price,
-    0
-  );
+    return;
+  }
 
-  document.getElementById("cartTotal").textContent =
-    money(total);
+  el.innerHTML =
+    cart.map((item, index) => `
+      <div class="cart-line">
+
+        <span>
+          ${item.name}
+          (${item.size})
+          × ${item.quantity}
+        </span>
+
+        <b>
+          ₹${money(
+            item.price * item.quantity
+          )}
+        </b>
+
+        <button
+          onclick="removeCart(${index})"
+        >
+          Remove
+        </button>
+
+      </div>
+    `).join("");
+
+  const total =
+    cart.reduce(
+      (sum, item) =>
+        sum +
+        item.price * item.quantity,
+      0
+    );
+
+  const totalElement =
+    document.getElementById("cartTotal");
+
+  if (totalElement) {
+    totalElement.textContent =
+      money(total);
+  }
 }
 
 
-/* =========================================================
-   CLOSE CART
-   ========================================================= */
+// =========================
+// REMOVE CART
+// =========================
+
+function removeCart(index) {
+
+  cart.splice(index, 1);
+
+  updateCartCount();
+
+  openCart();
+}
+
+
+// =========================
+// CLOSE CART
+// =========================
 
 function closeCart() {
 
-  const modal = document.getElementById("cartModal");
+  const modal =
+    document.getElementById("cartModal");
 
   if (modal) {
     modal.style.display = "none";
@@ -250,513 +341,186 @@ function closeCart() {
 }
 
 
-/* =========================================================
-   PLACE ORDER
-   ========================================================= */
+// =========================
+// CUSTOMER LOGIN
+// =========================
 
-function placeOrder() {
+async function loginUser(email, password) {
 
-  if (!cart.length) {
-    return alert("Cart is empty");
+  const response =
+    await fetch(`${API_URL}/api/login`, {
+      method: "POST",
+
+      headers: {
+        "Content-Type": "application/json"
+      },
+
+      body: JSON.stringify({
+        email,
+        password
+      })
+    });
+
+  const data =
+    await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      data.error || "Login failed"
+    );
   }
 
-  const total = cart.reduce(
-    (sum, item) => sum + item.price,
-    0
+  localStorage.setItem(
+    "niniUser",
+    JSON.stringify(data.user)
   );
 
-  cart.forEach(item => {
-
-    const product = db.products[item.product];
-
-    if (product && product.stock > 0) {
-      product.stock--;
-    }
-
-  });
-
-  db.orders.push({
-
-    id: "NG" + Date.now().toString().slice(-6),
-
-    date: new Date().toLocaleString(),
-
-    items: cart,
-
-    total: total,
-
-    status: "New"
-
-  });
-
-  save();
-
-  cart = [];
-
-  const count = document.getElementById("cartCount");
-
-  if (count) {
-    count.textContent = 0;
-  }
-
-  closeCart();
-
-  renderProducts();
-
-  alert("Demo order created successfully!");
+  return data.user;
 }
 
 
-/* =========================================================
-   ADMIN INITIALIZATION
-   ========================================================= */
+// =========================
+// CUSTOMER REGISTER
+// =========================
 
-function initAdmin() {
+async function registerUser(
+  name,
+  email,
+  password
+) {
 
-  if (!document.getElementById("adminProducts")) {
+  const response =
+    await fetch(`${API_URL}/api/register`, {
+      method: "POST",
+
+      headers: {
+        "Content-Type": "application/json"
+      },
+
+      body: JSON.stringify({
+        name,
+        email,
+        password
+      })
+    });
+
+  const data =
+    await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      data.error || "Registration failed"
+    );
+  }
+
+  return data;
+}
+
+
+// =========================
+// LOGOUT
+// =========================
+
+function logoutUser() {
+
+  localStorage.removeItem("niniUser");
+
+  location.reload();
+}
+
+
+// =========================
+// PLACE ORDER
+// =========================
+
+async function placeOrder() {
+
+  if (!cart.length) {
+    alert("Cart is empty.");
     return;
   }
 
-  const form = document.getElementById("productForm");
+  const user =
+    JSON.parse(
+      localStorage.getItem("niniUser") || "null"
+    );
 
+  if (!user || !user.id) {
 
-  /* ---------------------------------------------------------
-     ADD PRODUCT
-     --------------------------------------------------------- */
+    alert(
+      "Please login before placing an order."
+    );
 
-  form.onsubmit = async e => {
-
-    e.preventDefault();
-
-    let image = pImage.value.trim();
-
-    const file =
-      document.getElementById("pImageFile").files[0];
-
-    if (file) {
-      image = await fileToDataUrl(file);
-    }
-
-
-    let sizes = pSizes.value
-      .split(",")
-      .map(x => x.trim())
-      .filter(Boolean);
-
-
-    /*
-       Automatically add 5-6Y
-       if it is not entered manually.
-    */
-
-    if (!sizes.includes("5-6Y")) {
-      sizes.push("5-6Y");
-    }
-
-
-    const product = {
-
-      name: pName.value,
-
-      cat: pCat.value,
-
-      price: +pPrice.value,
-
-      mrp: +pMrp.value || +pPrice.value,
-
-      cost: +pCost.value,
-
-      sizes: sizes,
-
-      stock: +pStock.value,
-
-      image: image,
-
-      desc: pDesc.value.trim()
-
-    };
-
-
-    db.products.push(product);
-
-    save();
-
-    form.reset();
-
-    renderAdmin();
-
-    alert("Product listing added successfully.");
-  };
-
-
-  /* ---------------------------------------------------------
-     PURCHASE / STOCK
-     --------------------------------------------------------- */
-
-  document.getElementById("purchaseForm").onsubmit = e => {
-
-    e.preventDefault();
-
-    const i = +purchaseProduct.value;
-
-    const q = +purchaseQty.value;
-
-    const c = +purchaseCost.value;
-
-    if (!db.products[i]) {
-      return alert("Product not found.");
-    }
-
-    db.products[i].stock += q;
-
-    db.products[i].cost = c;
-
-    db.purchases.push({
-
-      product: db.products[i].name,
-
-      qty: q,
-
-      cost: c,
-
-      date: new Date().toLocaleString()
-
-    });
-
-    save();
-
-    e.target.reset();
-
-    renderAdmin();
-
-    alert("Stock added.");
-  };
-
-
-  renderAdmin();
-}
-
-
-/* =========================================================
-   FILE TO DATA URL
-   ========================================================= */
-
-function fileToDataUrl(file) {
-
-  return new Promise((resolve, reject) => {
-
-    const reader = new FileReader();
-
-    reader.onload = () => resolve(reader.result);
-
-    reader.onerror = reject;
-
-    reader.readAsDataURL(file);
-
-  });
-
-}
-
-
-/* =========================================================
-   EDIT PRODUCT
-   ========================================================= */
-
-function editProduct(i) {
-
-  const p = db.products[i];
-
-  if (!p) return;
-
-  pName.value = p.name;
-
-  pCat.value = p.cat;
-
-  pPrice.value = p.price;
-
-  pMrp.value = p.mrp || p.price;
-
-  pCost.value = p.cost;
-
-  pSizes.value = p.sizes.join(", ");
-
-  pStock.value = p.stock;
-
-  pImage.value =
-    (p.image && p.image.startsWith("http"))
-      ? p.image
-      : "";
-
-  pDesc.value = p.desc || "";
-
-  window.scrollTo({
-    top: 0,
-    behavior: "smooth"
-  });
-}
-
-
-/* =========================================================
-   DELETE PRODUCT
-   ========================================================= */
-
-function deleteProduct(i) {
-
-  if (
-    confirm("Delete this product listing?")
-  ) {
-
-    db.products.splice(i, 1);
-
-    save();
-
-    renderAdmin();
-
+    return;
   }
 
-}
+  const total =
+    cart.reduce(
+      (sum, item) =>
+        sum +
+        item.price * item.quantity,
+      0
+    );
 
+  try {
 
-/* =========================================================
-   RENDER ADMIN
-   ========================================================= */
+    const response =
+      await fetch(`${API_URL}/api/orders`, {
+        method: "POST",
 
-function renderAdmin() {
+        headers: {
+          "Content-Type": "application/json"
+        },
 
-  const sProducts =
-    document.getElementById("sProducts");
+        body: JSON.stringify({
 
-  const sStock =
-    document.getElementById("sStock");
+          user_id: user.id,
 
-  const sOrders =
-    document.getElementById("sOrders");
+          total_amount: total,
 
-  const sSales =
-    document.getElementById("sSales");
+          items: cart.map(item => ({
+            product_id: item.product_id,
+            quantity: item.quantity,
+            size: item.size,
+            price: item.price
+          }))
 
-  const sProfit =
-    document.getElementById("sProfit");
+        })
+      });
 
+    const data =
+      await response.json();
 
-  if (sProducts) {
-    sProducts.textContent =
-      db.products.length;
-  }
-
-
-  if (sStock) {
-    sStock.textContent =
-      db.products.reduce(
-        (total, product) =>
-          total + product.stock,
-        0
+    if (!response.ok) {
+      throw new Error(
+        data.error || "Order failed"
       );
-  }
+    }
 
-
-  if (sOrders) {
-    sOrders.textContent =
-      db.orders.length;
-  }
-
-
-  const sales =
-    db.orders.reduce(
-      (total, order) =>
-        total + order.total,
-      0
+    alert(
+      `Order placed successfully!\nOrder ID: ${data.order_id}`
     );
 
+    cart = [];
 
-  const profit =
-    db.orders.reduce(
-      (total, order) => {
+    updateCartCount();
 
-        return total +
-          order.items.reduce(
-            (itemTotal, item) => {
+    closeCart();
 
-              const product =
-                db.products[item.product];
+    await loadProducts();
 
-              const cost =
-                product?.cost || 0;
+  } catch (error) {
 
-              return itemTotal +
-                (item.price - cost);
+    console.error(error);
 
-            },
-            0
-          );
-
-      },
-      0
-    );
-
-
-  if (sSales) {
-    sSales.textContent =
-      money(sales);
-  }
-
-
-  if (sProfit) {
-    sProfit.textContent =
-      money(profit);
-  }
-
-
-  /* ---------------------------------------------------------
-     PURCHASE PRODUCT DROPDOWN
-     --------------------------------------------------------- */
-
-  const purchaseProduct =
-    document.getElementById("purchaseProduct");
-
-  if (purchaseProduct) {
-
-    purchaseProduct.innerHTML =
-      db.products.map(
-        (p, i) => `
-          <option value="${i}">
-            ${p.name} — ${p.stock} pcs
-          </option>
-        `
-      ).join("");
+    alert(error.message);
 
   }
-
-
-  /* ---------------------------------------------------------
-     ADMIN PRODUCT LIST
-     --------------------------------------------------------- */
-
-  const adminProducts =
-    document.getElementById("adminProducts");
-
-  if (adminProducts) {
-
-    adminProducts.innerHTML =
-      db.products.map(
-        (p, i) => `
-
-          <div class="admin-product">
-
-            <span>
-
-              <b>
-                ${p.name}
-              </b>
-
-              <br>
-
-              <small>
-                ${p.cat}
-                • ₹${money(p.price)}
-                • MRP ₹${money(p.mrp || p.price)}
-                • Cost ₹${money(p.cost)}
-                • Sizes: ${p.sizes.join(", ")}
-              </small>
-
-            </span>
-
-
-            <span class="${p.stock <= 5 ? "low" : ""}">
-              ${p.stock} pcs
-            </span>
-
-
-            <span class="edit-actions">
-
-              <button
-                onclick="editProduct(${i})"
-              >
-                Edit
-              </button>
-
-              <button
-                onclick="deleteProduct(${i})"
-              >
-                Delete
-              </button>
-
-            </span>
-
-          </div>
-
-        `
-      ).join("");
-
-  }
-
-
-  /* ---------------------------------------------------------
-     ADMIN ORDERS
-     --------------------------------------------------------- */
-
-  const adminOrders =
-    document.getElementById("adminOrders");
-
-  if (adminOrders) {
-
-    adminOrders.innerHTML =
-      db.orders.length
-
-        ? db.orders
-            .slice()
-            .reverse()
-            .map(
-              order => `
-
-                <div class="order">
-
-                  <b>
-                    ${order.id}
-                  </b>
-
-                  • ${order.date}
-
-                  <br>
-
-                  Items:
-                  ${order.items
-                    .map(
-                      item =>
-                        item.name +
-                        " (" +
-                        item.size +
-                        ")"
-                    )
-                    .join(", ")
-                  }
-
-                  <br>
-
-                  <b>
-                    ₹${money(order.total)}
-                  </b>
-
-                  —
-                  ${order.status}
-
-                </div>
-
-              `
-            )
-            .join("")
-
-        : "No orders yet.";
-
-  }
-
 }
 
 
-/* =========================================================
-   START APPLICATION
-   ========================================================= */
+// =========================
+// START
+// =========================
 
-renderProducts();
-
-initAdmin();
+loadProducts();
