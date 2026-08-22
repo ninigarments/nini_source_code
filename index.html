@@ -1,69 +1,140 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Nini Garments | Kids Wear 0–6 Years</title>
-<link rel="stylesheet" href="style.css">
-</head>
-<body>
-<div class="topbar">🎀 Premium Kids Wear &nbsp; • &nbsp; 🚚 Fast Delivery Across India &nbsp; • &nbsp; 🔄 Easy Returns</div>
-<header>
-  <a class="brand" href="./index.html"><img src="./nini-logo.png?v=3" alt="Nini Garments"></a>
-  <nav>
-    <a href="#home">Home</a><a href="#shop">Shop</a><a href="#categories">Categories</a><a href="#about">About Us</a>
-  </nav>
-  <div class="actions"><button onclick="openCart()">🛒 <span id="cartCount">0</span></button><a class="admin-link" href="admin.html">Admin</a></div>
-</header>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="description" content="Nini Garments - 0 to 6 Years Kids Wear">
 
-<section id="home" class="hero">
-  <div>
-    <p class="eyebrow">PREMIUM QUALITY KIDS WEAR</p>
-    <h1>Comfort & Style<br>for <span>Little Ones</span></h1>
-    <p class="sub">Trendy hoodies, sets & kids clothing for <b>0–6 Years</b>.</p>
-    <a href="#shop" class="btn">SHOP NOW →</a>
-  </div>
-  <div class="hero-art"><div class="bubble">NINI<br><small>0–6 YEARS</small></div></div>
-</section>
+  <title>Nini Garments | 0–6 Years Kids Wear</title>
 
-<div class="benefits">
-  <div>🌿 <b>Premium Fabric</b><small>Soft & comfortable</small></div>
-  <div>🛡️ <b>Safe for Kids</b><small>Skin-friendly materials</small></div>
-  <div>🚚 <b>Fast Delivery</b><small>Across India</small></div>
-  <div>🔄 <b>Easy Returns</b><small>Hassle-free returns</small></div>
-</div>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
-<section id="categories" class="section">
-<h2>Shop by Category</h2>
-<div class="categories">
-  <button onclick="filterCat('Hoodies')">🧥<b>Hoodies</b></button>
-  <button onclick="filterCat('Sets')">👕<b>Sets</b></button>
-  <button onclick="filterCat('Sweatshirts')">🧸<b>Sweatshirts</b></button>
-  <button onclick="filterCat('Jackets')">🧥<b>Jackets</b></button>
-</div>
-</section>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
-<section id="shop" class="section">
-<h2>Featured Products</h2>
-<div id="products" class="products"></div>
-  
-</section>
+    html {
+      scroll-behavior: smooth;
+    }
 
-<section id="about" class="about">
-<h2>Why Choose Nini Garments?</h2>
-<p>Quality kidswear made for comfort, style and everyday adventures. We currently offer sizes and styles for children from 0 to 6 years.</p>
-</section>
+    body {
+      font-family: "Nunito", sans-serif;
+      background: #ffffff;
+      color: #202124;
+      padding-bottom: 78px;
+    }
 
-<footer>
-  <img src="./nini-logo.png?v=3" alt="Nini Garments">
-  <div><b>Quick Links</b><a href="#shop">Shop</a><a href="#categories">Categories</a><a href="#about">About</a></div>
-  <div><b>Customer Service</b><span>Shipping & Delivery</span><span>Returns & Refunds</span><span>Size Guide</span></div>
-  <div><b>Contact</b><span>Bokaro, Jharkhand – 829107</span><span>WhatsApp: +91 91027 09203</span></div>
-</footer>
+    button,
+    a,
+    select {
+      font-family: inherit;
+    }
 
-<div id="cartModal" class="modal">
-  <div class="modal-card"><button class="close" onclick="closeCart()">×</button><h2>Your Cart</h2><div id="cartItems"></div><div class="cart-total">Total: ₹<span id="cartTotal">0</span></div><button class="btn" onclick="placeOrder()">PLACE ORDER</button></div>
-</div>
-<script src="app.js"></script>
-</body>
-</html>
+    button {
+      cursor: pointer;
+    }
+
+    a {
+      text-decoration: none;
+      color: inherit;
+    }
+
+    /* =========================
+       TOP HEADER
+    ========================= */
+
+    .mobile-header {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: rgba(255,255,255,.97);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid #f1f1f1;
+    }
+
+    .header-main {
+      height: 76px;
+      display: grid;
+      grid-template-columns: 48px 1fr 48px 48px;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 12px;
+    }
+
+    .icon-btn {
+      width: 44px;
+      height: 44px;
+      border: 0;
+      background: transparent;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-size: 23px;
+      color: #222;
+    }
+
+    .icon-btn:active {
+      background: #f7f7f7;
+    }
+
+    .brand {
+      text-align: center;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .brand img {
+      width: 116px;
+      height: auto;
+      max-height: 64px;
+      object-fit: contain;
+    }
+
+    .cart-button {
+      position: relative;
+    }
+
+    .cart-badge {
+      position: absolute;
+      top: 1px;
+      right: 0;
+      min-width: 20px;
+      height: 20px;
+      padding: 0 5px;
+      border-radius: 20px;
+      background: #f23b72;
+      color: white;
+      font-size: 11px;
+      font-weight: 900;
+      display: grid;
+      place-items: center;
+    }
+
+    .brand-tagline {
+      text-align: center;
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      color: #2381c4;
+      margin-top: -3px;
+      padding-bottom: 7px;
+    }
+
+    /* =========================
+       HERO
+    ========================= */
+
+    .hero {
+      margin: 12px;
+      border-radius: 24px;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 85% 20%, rgba(255,255,255,.9) 0 5%, transparent 6%),
+        radial-gradient(circle at 75% 65
