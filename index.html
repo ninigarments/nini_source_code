@@ -28,6 +28,21 @@
 </main>
 <footer class="site-footer"><div class="container footer-grid"><div class="footer-brand"><div class="footer-logo">NINI</div><p>Premium kidswear for little ones aged 0–6 years.</p></div><div><h4>Shop</h4><a href="#shop">All Products</a><a href="#categories">Categories</a><a href="#shop">New Arrivals</a></div><div><h4>Help</h4><a href="#about">About Us</a><a href="#about">Returns</a><a href="#about">Delivery</a></div><div><h4>Connect</h4><p>Follow Nini Garments</p><div class="socials"><span>Instagram</span><span>Facebook</span></div></div></div><div class="container footer-bottom"><span>© 2026 Nini Garments. All rights reserved.</span><span>Made with love for little ones.</span></div></footer>
 <div id="cartModal" class="cart-modal" onclick="if(event.target === this) closeCart()"><div class="cart-panel"><div class="cart-header"><div><p class="eyebrow">YOUR BAG</p><h2>Shopping Cart</h2></div><button class="close-cart" onclick="closeCart()">×</button></div><div id="cartItems" class="cart-items">Your cart is empty.</div><div class="cart-summary"><span>Total</span><strong>₹<span id="cartTotal">0</span></strong></div><button class="btn btn-primary cart-checkout" onclick="placeOrder()">Place Order →</button></div></div>
+<script>
+function toggleMobileMenu(){
+  const nav=document.getElementById("mainNav");
+  const btn=document.querySelector(".mobile-menu-btn");
+  const open=nav.classList.toggle("mobile-open");
+  btn.setAttribute("aria-expanded",open?"true":"false");
+}
+document.querySelectorAll(".main-nav a").forEach(a=>{
+  a.addEventListener("click",()=>{
+    document.getElementById("mainNav").classList.remove("mobile-open");
+    const b=document.querySelector(".mobile-menu-btn");
+    if(b)b.setAttribute("aria-expanded","false");
+  });
+});
+</script>
 <script src="app.js"></script>
 </body>
 </html>
