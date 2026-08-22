@@ -39,3 +39,4 @@ Do not use the demo admin page for real customer/payment data until authenticati
 - Logo: supplied Nini Garments logo, retaining its original blue/red/green branding.
 
 - Admin listing editor: change product image, selling rate, MRP, purchase cost, sizes and description; edit/delete listings.
+Deployment update
