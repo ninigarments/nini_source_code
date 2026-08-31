@@ -265,3 +265,73 @@ button{cursor:pointer}
   .hero-market-copy h1{font-size:33px}
   .hero-buttons .market-btn{padding:0 12px}
 }
+
+
+/* ===== FINAL HERO + LOGO FIX ===== */
+.market-logo img{
+  width:58px;
+  height:58px;
+  border-radius:8px;
+  object-fit:cover;
+}
+.header-row{
+  min-height:76px;
+  height:76px;
+}
+
+/* IMPORTANT: keep the NINI logo inside the hero card */
+.hero-fashion-card{
+  overflow:hidden;
+  position:relative;
+}
+.hero-card-logo{
+  display:block;
+  width:118px !important;
+  height:68px !important;
+  max-width:118px !important;
+  max-height:68px !important;
+  object-fit:contain !important;
+  border-radius:8px;
+  margin:12px 0 0;
+  flex:0 0 auto;
+}
+.hero-fashion-card strong{
+  margin-top:10px;
+}
+
+/* Keep the hero artwork completely inside its column */
+.hero-market-art{
+  min-width:0;
+  overflow:hidden;
+}
+
+/* ===== MOBILE ===== */
+@media(max-width:650px){
+  .header-row{
+    height:62px;
+    min-height:62px;
+  }
+  .market-logo img{
+    width:46px;
+    height:46px;
+  }
+  .market-logo strong{
+    font-size:18px;
+  }
+  .market-logo small{
+    font-size:6px;
+  }
+  .hero-market-art{
+    overflow:hidden;
+  }
+  .hero-fashion-card{
+    width:245px;
+    height:205px;
+  }
+  .hero-card-logo{
+    width:100px !important;
+    height:56px !important;
+    max-width:100px !important;
+    max-height:56px !important;
+  }
+}
