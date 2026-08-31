@@ -486,7 +486,7 @@ button{cursor:pointer}
 
 .hero-card-text strong {
     display: block;
-    font-size: 20px;
+    font-size: 16px;
     line-height: 1.2;
     font-weight: 800;
     color: #08785f;
@@ -496,7 +496,7 @@ button{cursor:pointer}
 .hero-card-text em {
     display: block;
     margin-top: 3px;
-    font-size: 21px;
+    font-size: 16px;
     line-height: 1.2;
     color: #111827;
     font-style: italic;
