@@ -518,13 +518,13 @@ button{cursor:pointer}
     }
 
     .hero-card-logo {
-        width: 350px;
-        height: 270px;
+       width: min(92vw, 430px);
+        height: 410px;
         margin-top: 20px;
     }
 
     .hero-card-text strong {
-        font-size: 16px;
+        font-size: 14px;
     }
 
     .hero-card-text em {
