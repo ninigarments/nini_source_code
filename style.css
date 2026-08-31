@@ -335,3 +335,75 @@ button{cursor:pointer}
     max-height:56px !important;
   }
 }
+
+
+/* ===== READABILITY UPGRADE =====
+   Larger marketplace-style navigation, category and product typography.
+*/
+.category-bar-inner{
+  height:48px;
+  gap:34px;
+}
+.category-bar a{
+  font-size:13px;
+  font-weight:700;
+}
+
+.trust-grid strong{font-size:12px}
+.trust-grid small{font-size:9px}
+
+.market-title-row h2{font-size:29px}
+.market-title-row>a{font-size:12px}
+
+.market-category{
+  min-height:190px;
+  padding:15px;
+}
+.market-category strong{font-size:15px}
+.market-category small{font-size:11px}
+.market-category>span{font-size:11px}
+
+.shop-controls{font-size:12px}
+.shop-controls select{font-size:12px}
+
+.filter-heading{font-size:12px}
+.filter-heading button{font-size:11px}
+.filter-block strong{font-size:12px}
+.filter-block button,.filter-block label{font-size:11px}
+
+.product-info h3{font-size:14px;height:38px}
+.product .price{font-size:17px}
+.product .stock{font-size:10px}
+.product select{font-size:11px}
+.product button{font-size:11px}
+
+.promo-grid>div>span{font-size:11px}
+.promo-grid h2{font-size:29px}
+
+@media(max-width:650px){
+  .category-bar-inner{
+    height:44px;
+    gap:22px;
+  }
+  .category-bar a{font-size:11px}
+
+  .trust-grid strong{font-size:10px}
+  .trust-grid small{font-size:8px}
+
+  .market-title-row h2{font-size:24px}
+  .market-title-row>a{font-size:10px}
+
+  .market-category{
+    min-height:165px;
+    padding:11px;
+  }
+  .market-category strong{font-size:13px}
+  .market-category small{font-size:10px}
+  .market-category>span{font-size:10px}
+
+  .product-info h3{font-size:12px;height:34px}
+  .product .price{font-size:15px}
+  .product .stock{font-size:9px}
+  .product select{font-size:10px}
+  .product button{font-size:10px}
+}
