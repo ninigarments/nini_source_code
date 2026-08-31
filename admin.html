@@ -1,60 +1,122 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Nini Garments | Admin Dashboard</title><link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nini Garments | Kids Fashion Store</title>
+<link rel="stylesheet" href="style.css">
 </head>
-<body class="admin-body">
-<header><a class="brand" href="index.html"><img src="nini-logo.jpeg"></a><a class="admin-link" href="index.html">← Store</a></header>
-<main class="admin">
-<h1>Admin Dashboard</h1>
-<div class="stats">
-  <div><small>Products</small><strong id="sProducts">0</strong></div>
-  <div><small>Total Stock</small><strong id="sStock">0</strong></div>
-  <div><small>Orders</small><strong id="sOrders">0</strong></div>
-  <div><small>Sales</small><strong>₹<span id="sSales">0</span></strong></div>
-  <div><small>Profit</small><strong>₹<span id="sProfit">0</span></strong></div>
+<body>
+
+<div class="top-bar">
+  <div class="container top-inner">
+    <span>🚚 Free delivery on selected orders</span>
+    <span>💳 Secure payments</span>
+    <span>↪ Easy returns</span>
+    <span>⭐ Trusted kidswear</span>
+  </div>
 </div>
 
-<div class="admin-grid">
-<section class="panel">
-<h2>Add / Edit Product Listing</h2>
-<form id="productForm">
-<input id="pName" placeholder="Product name" required>
-<select id="pCat"><option>Hoodies</option><option>Sets</option><option>Sweatshirts</option><option>Jackets</option><option>T-Shirts</option><option>Bottom Wear</option></select>
-<div class="row"><input id="pPrice" type="number" placeholder="Selling price ₹" required><input id="pMrp" type="number" placeholder="MRP ₹ (optional)"></div>
-<input id="pCost" type="number" placeholder="Purchase cost ₹" required>
-<input id="pSizes" placeholder="Sizes: 0-1Y, 1-2Y, 2-3Y, 3-4Y, 4-5Y, 5-6Y" required>
-<input id="pStock" type="number" placeholder="Opening stock" required>
-<label class="file-label">Product image <input id="pImageFile" type="file" accept="image/*"></label>
-<input id="pImage" placeholder="Or paste image URL (optional)">
-<textarea id="pDesc" placeholder="Product description"></textarea>
-<button class="btn" type="submit">SAVE PRODUCT</button>
-</form>
-<p class="hint">You can change product photo, selling rate, MRP, sizes and description from here.</p>
+<header>
+  <div class="container header-main">
+    <a class="brand" href="#home">
+      <img src="nini-logo.jpeg" alt="Nini Garments">
+      <div><strong>NINI</strong><small>GARMENTS</small></div>
+    </a>
+
+    <div class="deliver">⌖ <div><small>Deliver to</small><strong>India⌄</strong></div></div>
+
+    <div class="search">
+      <span>⌕</span>
+      <input id="searchInput" type="search" placeholder="Search for kids clothing, sets, hoodies...">
+      <button id="searchBtn">Search</button>
+    </div>
+
+    <div class="actions">
+      <a href="#"><b>♙</b><small>Account</small></a>
+      <a href="#"><b>▣</b><small>Orders</small></a>
+      <a href="#"><b>🛒<i id="cartCount">0</i></b><small>Cart</small></a>
+    </div>
+  </div>
+
+  <nav>
+    <div class="container nav-inner">
+      <a class="active" href="#categories">All Categories</a>
+      <a href="#hoodies">Hoodies</a>
+      <a href="#sets">Kids Sets</a>
+      <a href="#clothing">Kids Clothing</a>
+      <a href="#new">New Arrivals</a>
+      <a href="#bestsellers">Best Sellers</a>
+      <a href="#under499">Under ₹499</a>
+      <a href="#promise">Nini Promise</a>
+    </div>
+  </nav>
+</header>
+
+<main id="home">
+<section class="hero">
+  <div class="container hero-grid">
+    <div class="hero-copy">
+      <div class="eyebrow">NINI KIDS COLLECTION</div>
+      <h1>Everyday fashion<br><span>for little stars.</span></h1>
+      <p>Comfortable kidswear, cute sets and everyday essentials for ages 0–6 years.</p>
+      <div class="buttons">
+        <a class="btn primary" href="#categories">Shop Now →</a>
+        <a class="btn outline" href="#categories">Explore Categories</a>
+      </div>
+      <div class="trust"><span>✓ Kids-friendly</span><span>✓ Quality fabrics</span><span>✓ Easy returns</span></div>
+    </div>
+
+    <div class="hero-visual">
+      <div class="premium">✦ PREMIUM</div>
+      <img class="hero-logo" src="nini-logo.jpeg" alt="Nini Garments logo">
+      <div class="hero-text">
+        <strong>GARMENTS • KIDS FASHION</strong>
+        <em>Comfort • Style • Joy</em>
+      </div>
+      <div class="pill loved">💗 Loved by parents</div>
+      <div class="pill delivery">🚚 Fast delivery</div>
+      <div class="arrivals">NEW<br>ARRIVALS</div>
+    </div>
+  </div>
 </section>
 
-<section class="panel">
-<h2>Purchase / Stock In</h2>
-<form id="purchaseForm">
-<select id="purchaseProduct"></select>
-<input id="purchaseQty" type="number" min="1" placeholder="Quantity" required>
-<input id="purchaseCost" type="number" min="0" placeholder="Cost per piece ₹" required>
-<button class="btn" type="submit">ADD STOCK</button>
-</form>
-</section>
-</div>
-
-<section class="panel">
-<h2>Product & Stock</h2>
-<div id="adminProducts"></div>
+<section class="services" id="promise">
+  <div class="container services-grid">
+    <div><span>♢</span><p><strong>Quality assured</strong><small>Made for little ones</small></p></div>
+    <div><span>🚚</span><p><strong>Fast delivery</strong><small>Across India</small></p></div>
+    <div><span>↔</span><p><strong>Easy returns</strong><small>Simple & hassle-free</small></p></div>
+    <div><span>🔒</span><p><strong>Secure checkout</strong><small>Safe payments</small></p></div>
+  </div>
 </section>
 
-<section class="panel">
-<h2>Orders & Sales</h2>
-<div id="adminOrders"></div>
+<section class="categories" id="categories">
+  <div class="container">
+    <div class="section-head">
+      <div><div class="eyebrow">SHOP BY CATEGORY</div><h2>Find something <span>they’ll love</span></h2></div>
+      <a href="#categories">View all →</a>
+    </div>
+    <div class="category-grid">
+      <a class="category pink" id="hoodies" href="#products"><div>🧥</div><h3>Hoodies</h3><p>Warm & stylish</p></a>
+      <a class="category blue" id="sets" href="#products"><div>👕</div><h3>Kids Sets</h3><p>Perfect everyday wear</p></a>
+      <a class="category green" id="clothing" href="#products"><div>👗</div><h3>Kids Clothing</h3><p>Cute styles for little ones</p></a>
+      <a class="category yellow" id="new" href="#products"><div>✨</div><h3>New Arrivals</h3><p>Fresh styles</p></a>
+    </div>
+  </div>
+</section>
+
+<section class="products" id="products">
+  <div class="container">
+    <div class="section-head"><div><div class="eyebrow">OUR COLLECTION</div><h2>Popular <span>kidswear</span></h2></div></div>
+    <div class="product-placeholder">Products will appear here when connected to your existing Nini API.</div>
+  </div>
 </section>
 </main>
-<script src="app.js"></script>
+
+<script>
+const input=document.getElementById("searchInput");
+document.getElementById("searchBtn").onclick=()=>document.getElementById("products").scrollIntoView({behavior:"smooth"});
+input.addEventListener("keydown",e=>{if(e.key==="Enter")document.getElementById("products").scrollIntoView({behavior:"smooth"})});
+</script>
 </body>
 </html>
