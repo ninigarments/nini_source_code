@@ -429,3 +429,111 @@ button{cursor:pointer}
 @media(max-width:650px){
   .company-contact a,.company-address{font-size:11px}
 }
+/* =========================================
+   NINI HERO BRAND CARD
+   ========================================= */
+
+.hero-card {
+    position: relative;
+    width: 520px;
+    height: 480px;
+    border-radius: 24px;
+    background: linear-gradient(135deg, #f7d5e8 0%, #eee4f7 48%, #d9e8ff 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    padding: 28px;
+    box-sizing: border-box;
+}
+
+/* Premium badge */
+.hero-premium {
+    position: absolute;
+    top: 25px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #fff;
+    color: #111827;
+    padding: 9px 22px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    z-index: 5;
+    box-shadow: 0 5px 15px rgba(0,0,0,.08);
+}
+
+/* LARGE NINI LOGO */
+.hero-card-logo {
+    width: 430px;
+    height: 340px;
+    object-fit: contain;
+    display: block;
+    margin-top: 18px;
+    margin-bottom: -2px;
+    border-radius: 0;
+}
+
+/* Text inside hero card */
+.hero-card-text {
+    text-align: center;
+    margin-top: -4px;
+    position: relative;
+    z-index: 3;
+}
+
+.hero-card-text strong {
+    display: block;
+    font-size: 20px;
+    line-height: 1.2;
+    font-weight: 800;
+    color: #08785f;
+    letter-spacing: .2px;
+}
+
+.hero-card-text em {
+    display: block;
+    margin-top: 3px;
+    font-size: 21px;
+    line-height: 1.2;
+    color: #111827;
+    font-style: italic;
+    font-weight: 500;
+}
+
+
+/* =========================================
+   MOBILE
+   ========================================= */
+
+@media (max-width: 768px) {
+
+    .hero-card {
+        width: min(92vw, 430px);
+        height: 410px;
+        padding: 20px;
+        border-radius: 20px;
+    }
+
+    .hero-card-logo {
+        width: 350px;
+        height: 270px;
+        margin-top: 20px;
+    }
+
+    .hero-card-text strong {
+        font-size: 16px;
+    }
+
+    .hero-card-text em {
+        font-size: 17px;
+    }
+
+    .hero-premium {
+        top: 18px;
+        font-size: 11px;
+        padding: 7px 16px;
+    }
+}
