@@ -407,3 +407,26 @@ button{cursor:pointer}
   .product select{font-size:10px}
   .product button{font-size:10px}
 }
+
+
+/* ===== COMPANY CONTACT DETAILS ===== */
+.company-contact{
+  display:flex;
+  flex-direction:column;
+  gap:7px;
+  margin-top:12px;
+}
+.company-contact a{
+  color:inherit;
+  text-decoration:none;
+  font-size:12px;
+}
+.company-contact a:hover{text-decoration:underline}
+.company-address{
+  margin-top:13px;
+  font-size:12px;
+  line-height:1.6;
+}
+@media(max-width:650px){
+  .company-contact a,.company-address{font-size:11px}
+}
