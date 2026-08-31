@@ -1,244 +1,376 @@
-const API_URL = "https://nini-api.msninigarments7368.workers.dev";
+/* =========================================================
+   NINI GARMENTS — FRONTEND SHOPPING SYSTEM
+   Works with the current index.html + style.css
+   ========================================================= */
 
-let products = [];
-let cart = [];
+/* ---------- PRODUCT DATA ---------- */
 
-
-// =========================
-// LOAD PRODUCTS FROM D1 API
-// =========================
-
-async function loadProducts() {
-  try {
-    const response = await fetch(`${API_URL}/api/products`);
-
-    if (!response.ok) {
-      throw new Error("Products load nahi ho rahe");
-    }
-
-    const data = await response.json();
-
-    products = data.products || [];
-
-    renderProducts(products);
-    updateCartCount();
-
-  } catch (error) {
-    console.error(error);
-
-    const el = document.getElementById("products");
-
-    if (el) {
-      el.innerHTML = `
-        <p>Products load nahi ho rahe. Please refresh.</p>
-      `;
-    }
+const products = [
+  {
+    id: 1,
+    name: "Classic Kids Hoodie",
+    category: "Hoodies",
+    price: 399,
+    mrp: 699,
+    discount: 43,
+    age: "2–6 Years",
+    image: "nini-logo.jpeg"
+  },
+  {
+    id: 2,
+    name: "Cute Everyday Kids Set",
+    category: "Kids Sets",
+    price: 449,
+    mrp: 799,
+    discount: 44,
+    age: "1–5 Years",
+    image: "nini-logo.jpeg"
+  },
+  {
+    id: 3,
+    name: "Comfort Cotton T-Shirt",
+    category: "Clothing",
+    price: 299,
+    mrp: 499,
+    discount: 40,
+    age: "2–6 Years",
+    image: "nini-logo.jpeg"
+  },
+  {
+    id: 4,
+    name: "Premium Kids Hoodie",
+    category: "Hoodies",
+    price: 499,
+    mrp: 899,
+    discount: 44,
+    age: "3–6 Years",
+    image: "nini-logo.jpeg"
+  },
+  {
+    id: 5,
+    name: "Little Star Co-ord Set",
+    category: "Kids Sets",
+    price: 499,
+    mrp: 899,
+    discount: 44,
+    age: "1–6 Years",
+    image: "nini-logo.jpeg"
+  },
+  {
+    id: 6,
+    name: "Soft Cotton Kids Wear",
+    category: "Clothing",
+    price: 349,
+    mrp: 599,
+    discount: 42,
+    age: "0–5 Years",
+    image: "nini-logo.jpeg"
   }
-}
+];
 
 
-// =========================
-// MONEY
-// =========================
+/* ---------- CART ---------- */
 
-function money(value) {
-  return Number(value || 0).toLocaleString("en-IN");
-}
+let cart = JSON.parse(localStorage.getItem("niniCart")) || [];
 
 
-// =========================
-// RENDER PRODUCTS
-// =========================
+/* ---------- INITIAL LOAD ---------- */
 
-function renderProducts(list = products) {
+document.addEventListener("DOMContentLoaded", function () {
+  renderProducts(products);
+  updateCartCount();
+});
 
-  const el = document.getElementById("products");
 
-  if (!el) return;
+/* ---------- PRODUCT RENDER ---------- */
 
-  if (!list.length) {
-    el.innerHTML = "<p>No products available.</p>";
+function renderProducts(list) {
+
+  const container = document.getElementById("products");
+
+  if (!container) return;
+
+  if (!list || list.length === 0) {
+    container.innerHTML = `
+      <div class="loading-state">
+        <strong>No products found.</strong>
+        <br>
+        Try another search or category.
+      </div>
+    `;
     return;
   }
 
-  el.innerHTML = list.map((product, index) => {
-
-    const sizes = Array.isArray(product.sizes)
-      ? product.sizes
-      : [];
-
-    const availableSizes = sizes.filter(
-      item => Number(item.stock || 0) > 0
-    );
-
-    const totalStock = sizes.reduce(
-      (total, item) =>
-        total + Number(item.stock || 0),
-      0
-    );
+  container.innerHTML = list.map(product => {
 
     return `
       <article class="product">
 
         <img
-          src="${product.image || "assets/nini-logo.png"}"
-          alt="${product.name || "Nini Garments"}"
+          src="${product.image}"
+          alt="${escapeHTML(product.name)}"
+          onerror="this.src='nini-logo.jpeg'"
         >
 
         <div class="product-info">
 
-          <h3>${product.name || ""}</h3>
+          <h3>${escapeHTML(product.name)}</h3>
 
           <div class="price">
-            ₹${money(product.price)}
+            ₹${Number(product.price).toLocaleString("en-IN")}
           </div>
 
           <div class="stock">
-            ${
-              totalStock > 0
-                ? `${totalStock} pcs available`
-                : "Out of Stock"
-            }
+            <del>₹${Number(product.mrp).toLocaleString("en-IN")}</del>
+            &nbsp;
+            <span>${product.discount}% off</span>
+            &nbsp; • &nbsp;
+            ${escapeHTML(product.age)}
           </div>
 
-          ${
-            availableSizes.length
-              ? `
-                <select id="size-${index}">
-                  ${availableSizes.map(item => `
-                    <option value="${item.size}">
-                      ${item.size}
-                    </option>
-                  `).join("")}
-                </select>
+          <select id="size-${product.id}">
+            <option value="">Select Size</option>
+            <option value="0–1Y">0–1 Years</option>
+            <option value="1–2Y">1–2 Years</option>
+            <option value="2–3Y">2–3 Years</option>
+            <option value="3–4Y">3–4 Years</option>
+            <option value="4–5Y">4–5 Years</option>
+            <option value="5–6Y">5–6 Years</option>
+          </select>
 
-                <button
-                  onclick="
-                    addCart(
-                      ${index},
-                      document.getElementById('size-${index}').value
-                    )
-                  "
-                >
-                  ADD TO CART
-                </button>
-              `
-              : `
-                <button disabled>
-                  OUT OF STOCK
-                </button>
-              `
-          }
+          <button onclick="addToCart(${product.id})">
+            Add to Cart 🛒
+          </button>
 
         </div>
 
       </article>
     `;
+
   }).join("");
 }
 
 
-// =========================
-// CATEGORY FILTER
-// =========================
+/* ---------- SEARCH ---------- */
+
+function marketSearchProducts(query) {
+
+  const search = String(query || "")
+    .trim()
+    .toLowerCase();
+
+  if (!search) {
+
+    renderProducts(products);
+
+    const label = document.getElementById("resultLabel");
+
+    if (label) {
+      label.textContent = "All products";
+    }
+
+    return;
+  }
+
+  const filtered = products.filter(product => {
+
+    const name = String(product.name || "").toLowerCase();
+    const category = String(product.category || "").toLowerCase();
+    const age = String(product.age || "").toLowerCase();
+
+    return (
+      name.includes(search) ||
+      category.includes(search) ||
+      age.includes(search)
+    );
+
+  });
+
+  renderProducts(filtered);
+
+  const label = document.getElementById("resultLabel");
+
+  if (label) {
+    label.textContent =
+      filtered.length +
+      " result" +
+      (filtered.length !== 1 ? "s" : "") +
+      ' for "' +
+      search +
+      '"';
+  }
+}
+
+
+/* ---------- CATEGORY FILTER ---------- */
 
 function filterCat(category) {
 
-  const filtered = products.filter(product =>
-    product.category === category ||
-    product.cat === category
-  );
+  const value = String(category || "")
+    .trim()
+    .toLowerCase();
+
+  if (!value) {
+    renderProducts(products);
+    return;
+  }
+
+  const filtered = products.filter(product => {
+
+    const productCategory =
+      String(product.category || "").toLowerCase();
+
+    if (value === "clothing") {
+      return productCategory === "clothing";
+    }
+
+    return productCategory === value;
+
+  });
 
   renderProducts(filtered);
+
+  const label = document.getElementById("resultLabel");
+
+  if (label) {
+    label.textContent = category;
+  }
 
   const shop = document.getElementById("shop");
 
   if (shop) {
     shop.scrollIntoView({
-      behavior: "smooth"
+      behavior: "smooth",
+      block: "start"
     });
   }
 }
 
 
-// =========================
-// CART
-// =========================
+/* ---------- SORT ---------- */
 
-function addCart(index, size) {
+function sortMarketProducts(type) {
 
-  const product = products[index];
+  const sorted = [...products];
+
+  switch (type) {
+
+    case "low":
+      sorted.sort(
+        (a, b) => Number(a.price) - Number(b.price)
+      );
+      break;
+
+    case "high":
+      sorted.sort(
+        (a, b) => Number(b.price) - Number(a.price)
+      );
+      break;
+
+    case "name":
+      sorted.sort(
+        (a, b) =>
+          String(a.name).localeCompare(String(b.name))
+      );
+      break;
+
+    default:
+      break;
+  }
+
+  renderProducts(sorted);
+}
+
+
+/* ---------- ADD TO CART ---------- */
+
+function addToCart(productId) {
+
+  const product = products.find(
+    p => Number(p.id) === Number(productId)
+  );
 
   if (!product) return;
 
-  const sizeData = (product.sizes || []).find(
-    item => item.size === size
-  );
+  const sizeElement =
+    document.getElementById(`size-${productId}`);
 
-  if (!sizeData || Number(sizeData.stock) <= 0) {
-    alert("This size is out of stock.");
+  const size =
+    sizeElement ? sizeElement.value : "";
+
+  if (!size) {
+
+    alert("Please select a size first.");
+
+    if (sizeElement) {
+      sizeElement.focus();
+    }
+
     return;
   }
 
-  const existing = cart.find(
-    item =>
-      item.product_id === product.id &&
-      item.size === size
+  const existing = cart.find(item =>
+    Number(item.id) === Number(productId) &&
+    item.size === size
   );
 
   if (existing) {
 
-    if (
-      existing.quantity >=
-      Number(sizeData.stock)
-    ) {
-      alert("Maximum available stock reached.");
-      return;
-    }
-
-    existing.quantity++;
+    existing.quantity += 1;
 
   } else {
 
     cart.push({
-      product_id: product.id,
+      id: product.id,
       name: product.name,
+      category: product.category,
+      price: Number(product.price),
       size: size,
-      price: Number(product.price || 0),
-      quantity: 1
+      quantity: 1,
+      image: product.image
     });
 
   }
 
+  saveCart();
   updateCartCount();
 
-  alert("Added to cart!");
+  alert(`${product.name} added to cart.`);
 }
 
 
-// =========================
-// CART COUNT
-// =========================
+/* ---------- CART COUNT ---------- */
 
 function updateCartCount() {
 
-  const count =
+  const countElement =
     document.getElementById("cartCount");
 
-  if (!count) return;
+  if (!countElement) return;
 
-  count.textContent =
-    cart.reduce(
-      (total, item) =>
-        total + item.quantity,
-      0
-    );
+  const total = cart.reduce(
+    (sum, item) =>
+      sum + Number(item.quantity || 0),
+    0
+  );
+
+  countElement.textContent = total;
 }
 
 
-// =========================
-// OPEN CART
-// =========================
+/* ---------- SAVE CART ---------- */
+
+function saveCart() {
+
+  localStorage.setItem(
+    "niniCart",
+    JSON.stringify(cart)
+  );
+
+}
+
+
+/* ---------- OPEN CART ---------- */
 
 function openCart() {
 
@@ -247,280 +379,206 @@ function openCart() {
 
   if (!modal) return;
 
+  renderCart();
+
   modal.style.display = "flex";
 
-  const el =
-    document.getElementById("cartItems");
-
-  if (!el) return;
-
-  if (!cart.length) {
-
-    el.innerHTML =
-      "Your cart is empty.";
-
-    const total =
-      document.getElementById("cartTotal");
-
-    if (total) {
-      total.textContent = "0";
-    }
-
-    return;
-  }
-
-  el.innerHTML =
-    cart.map((item, index) => `
-      <div class="cart-line">
-
-        <span>
-          ${item.name}
-          (${item.size})
-          × ${item.quantity}
-        </span>
-
-        <b>
-          ₹${money(
-            item.price * item.quantity
-          )}
-        </b>
-
-        <button
-          onclick="removeCart(${index})"
-        >
-          Remove
-        </button>
-
-      </div>
-    `).join("");
-
-  const total =
-    cart.reduce(
-      (sum, item) =>
-        sum +
-        item.price * item.quantity,
-      0
-    );
-
-  const totalElement =
-    document.getElementById("cartTotal");
-
-  if (totalElement) {
-    totalElement.textContent =
-      money(total);
-  }
+  document.body.style.overflow = "hidden";
 }
 
 
-// =========================
-// REMOVE CART
-// =========================
-
-function removeCart(index) {
-
-  cart.splice(index, 1);
-
-  updateCartCount();
-
-  openCart();
-}
-
-
-// =========================
-// CLOSE CART
-// =========================
+/* ---------- CLOSE CART ---------- */
 
 function closeCart() {
 
   const modal =
     document.getElementById("cartModal");
 
-  if (modal) {
-    modal.style.display = "none";
-  }
+  if (!modal) return;
+
+  modal.style.display = "none";
+
+  document.body.style.overflow = "";
 }
 
 
-// =========================
-// CUSTOMER LOGIN
-// =========================
+/* ---------- RENDER CART ---------- */
 
-async function loginUser(email, password) {
+function renderCart() {
 
-  const response =
-    await fetch(`${API_URL}/api/login`, {
-      method: "POST",
+  const container =
+    document.getElementById("cartItems");
 
-      headers: {
-        "Content-Type": "application/json"
-      },
+  const totalElement =
+    document.getElementById("cartTotal");
 
-      body: JSON.stringify({
-        email,
-        password
-      })
-    });
+  if (!container) return;
 
-  const data =
-    await response.json();
+  if (cart.length === 0) {
 
-  if (!response.ok) {
-    throw new Error(
-      data.error || "Login failed"
-    );
-  }
+    container.innerHTML = `
+      <div class="loading-state">
+        🛒 Your cart is empty.
+        <br><br>
+        Add some cute kidswear to continue shopping.
+      </div>
+    `;
 
-  localStorage.setItem(
-    "niniUser",
-    JSON.stringify(data.user)
-  );
-
-  return data.user;
-}
-
-
-// =========================
-// CUSTOMER REGISTER
-// =========================
-
-async function registerUser(
-  name,
-  email,
-  password
-) {
-
-  const response =
-    await fetch(`${API_URL}/api/register`, {
-      method: "POST",
-
-      headers: {
-        "Content-Type": "application/json"
-      },
-
-      body: JSON.stringify({
-        name,
-        email,
-        password
-      })
-    });
-
-  const data =
-    await response.json();
-
-  if (!response.ok) {
-    throw new Error(
-      data.error || "Registration failed"
-    );
-  }
-
-  return data;
-}
-
-
-// =========================
-// LOGOUT
-// =========================
-
-function logoutUser() {
-
-  localStorage.removeItem("niniUser");
-
-  location.reload();
-}
-
-
-// =========================
-// PLACE ORDER
-// =========================
-
-async function placeOrder() {
-
-  if (!cart.length) {
-    alert("Cart is empty.");
-    return;
-  }
-
-  const user =
-    JSON.parse(
-      localStorage.getItem("niniUser") || "null"
-    );
-
-  if (!user || !user.id) {
-
-    alert(
-      "Please login before placing an order."
-    );
-
-    return;
-  }
-
-  const total =
-    cart.reduce(
-      (sum, item) =>
-        sum +
-        item.price * item.quantity,
-      0
-    );
-
-  try {
-
-    const response =
-      await fetch(`${API_URL}/api/orders`, {
-        method: "POST",
-
-        headers: {
-          "Content-Type": "application/json"
-        },
-
-        body: JSON.stringify({
-
-          user_id: user.id,
-
-          total_amount: total,
-
-          items: cart.map(item => ({
-            product_id: item.product_id,
-            quantity: item.quantity,
-            size: item.size,
-            price: item.price
-          }))
-
-        })
-      });
-
-    const data =
-      await response.json();
-
-    if (!response.ok) {
-      throw new Error(
-        data.error || "Order failed"
-      );
+    if (totalElement) {
+      totalElement.textContent = "0";
     }
 
-    alert(
-      `Order placed successfully!\nOrder ID: ${data.order_id}`
-    );
+    return;
+  }
 
-    cart = [];
+  container.innerHTML = cart.map((item, index) => {
 
-    updateCartCount();
+    const itemTotal =
+      Number(item.price) *
+      Number(item.quantity);
 
-    closeCart();
+    return `
+      <div class="cart-line">
 
-    await loadProducts();
+        <div>
+          <strong>${escapeHTML(item.name)}</strong>
 
-  } catch (error) {
+          <div style="color:#68748b;margin-top:5px">
+            Size: ${escapeHTML(item.size)}
+          </div>
 
-    console.error(error);
+          <div style="margin-top:5px">
+            ₹${Number(item.price).toLocaleString("en-IN")}
+            × ${item.quantity}
+          </div>
+        </div>
 
-    alert(error.message);
+        <strong>
+          ₹${itemTotal.toLocaleString("en-IN")}
+        </strong>
+
+        <div style="display:flex;gap:8px;align-items:center">
+
+          <button
+            onclick="changeCartQuantity(${index}, -1)"
+            style="border:1px solid #ddd;background:#fff;color:#111;padding:5px 10px;border-radius:4px"
+          >
+            −
+          </button>
+
+          <span>${item.quantity}</span>
+
+          <button
+            onclick="changeCartQuantity(${index}, 1)"
+            style="border:1px solid #ddd;background:#fff;color:#111;padding:5px 10px;border-radius:4px"
+          >
+            +
+          </button>
+
+          <button
+            onclick="removeFromCart(${index})"
+            style="margin-left:8px"
+          >
+            Remove
+          </button>
+
+        </div>
+
+      </div>
+    `;
+
+  }).join("");
+
+  const total = cart.reduce(
+    (sum, item) =>
+      sum +
+      Number(item.price) *
+      Number(item.quantity),
+    0
+  );
+
+  if (totalElement) {
+
+    totalElement.textContent =
+      total.toLocaleString("en-IN");
 
   }
 }
 
 
-// =========================
-// START
-// =========================
+/* ---------- CHANGE QUANTITY ---------- */
 
-loadProducts();
+function changeCartQuantity(index, change) {
+
+  if (!cart[index]) return;
+
+  cart[index].quantity += change;
+
+  if (cart[index].quantity <= 0) {
+
+    cart.splice(index, 1);
+
+  }
+
+  saveCart();
+  updateCartCount();
+  renderCart();
+}
+
+
+/* ---------- REMOVE CART ITEM ---------- */
+
+function removeFromCart(index) {
+
+  if (!cart[index]) return;
+
+  cart.splice(index, 1);
+
+  saveCart();
+  updateCartCount();
+  renderCart();
+}
+
+
+/* ---------- PLACE ORDER ---------- */
+
+function placeOrder() {
+
+  if (cart.length === 0) {
+
+    alert("Your cart is empty.");
+
+    return;
+  }
+
+  alert(
+    "Your cart is ready for checkout.\n\n" +
+    "Checkout and payment will be connected in the next step."
+  );
+
+}
+
+
+/* ---------- ESCAPE HTML ---------- */
+
+function escapeHTML(value) {
+
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+
+}
+
+
+/* ---------- CLOSE CART WITH ESC ---------- */
+
+document.addEventListener("keydown", function (event) {
+
+  if (event.key === "Escape") {
+    closeCart();
+  }
+
+});
