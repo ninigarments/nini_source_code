@@ -284,16 +284,13 @@ button{cursor:pointer}
   overflow:hidden;
   position:relative;
 }
-.hero-card-logo{
-  display:block;
-  width:118px !important;
-  height:68px !important;
-  max-width:118px !important;
-  max-height:68px !important;
-  object-fit:contain !important;
-  border-radius:8px;
-  margin:12px 0 0;
-  flex:0 0 auto;
+.hero-card-logo {
+    width: 230px;
+    height: 170px;
+    object-fit: contain;
+    display: block;
+    margin: 12px auto 8px;
+    border-radius: 12px;
 }
 .hero-fashion-card strong{
   margin-top:10px;
