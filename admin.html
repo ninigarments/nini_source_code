@@ -3,120 +3,938 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Nini Garments | Kids Fashion Store</title>
-<link rel="stylesheet" href="style.css">
+<title>Nini Garments | Admin Panel</title>
+
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:Arial,Helvetica,sans-serif;
+  background:#f5f7fb;
+  color:#172033;
+}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+
+.top{
+  background:#172033;
+  color:white;
+  padding:18px 24px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+.logo-title{
+  font-size:22px;
+  font-weight:800;
+}
+.logo-title span{color:#ff2d68}
+.top small{opacity:.75}
+
+.container{
+  max-width:1200px;
+  margin:30px auto;
+  padding:0 20px;
+}
+
+.card{
+  background:white;
+  border-radius:16px;
+  padding:24px;
+  box-shadow:0 5px 25px rgba(0,0,0,.07);
+  margin-bottom:24px;
+}
+
+h1,h2,h3{margin-top:0}
+
+.login{
+  max-width:430px;
+  margin:80px auto;
+}
+
+.field{margin-bottom:16px}
+.field label{
+  display:block;
+  font-weight:700;
+  margin-bottom:7px;
+}
+.field input,
+.field select,
+.field textarea{
+  width:100%;
+  padding:12px 13px;
+  border:1px solid #d9deea;
+  border-radius:9px;
+  outline:none;
+}
+.field textarea{min-height:90px;resize:vertical}
+
+.btn{
+  border:0;
+  border-radius:9px;
+  padding:12px 18px;
+  font-weight:700;
+}
+.primary{
+  background:#2167ed;
+  color:white;
+}
+.secondary{
+  background:#edf2ff;
+  color:#2167ed;
+}
+.danger{
+  background:#ffe9ee;
+  color:#d51f4f;
+}
+.logout{
+  background:#fff;
+  color:#172033;
+  padding:8px 13px;
+  border:0;
+  border-radius:8px;
+  font-weight:700;
+}
+
+.hidden{display:none!important}
+
+.toolbar{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:15px;
+  margin-bottom:20px;
+}
+.toolbar h1{margin:0}
+
+.products{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+  gap:18px;
+}
+
+.product{
+  border:1px solid #e4e8f0;
+  border-radius:14px;
+  overflow:hidden;
+  background:#fff;
+}
+.product-img{
+  height:190px;
+  background:#f3f5f9;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.product-img img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+.no-image{
+  color:#8a93a5;
+  font-weight:700;
+}
+.product-body{padding:16px}
+.product-body h3{
+  margin:0 0 8px;
+  font-size:18px;
+}
+.meta{
+  color:#687287;
+  font-size:14px;
+  margin:4px 0;
+}
+.price{
+  font-size:20px;
+  font-weight:800;
+  margin:10px 0;
+}
+.stock{
+  display:inline-block;
+  background:#e9f8ee;
+  color:#16833b;
+  padding:5px 9px;
+  border-radius:20px;
+  font-size:12px;
+  font-weight:700;
+}
+.inactive{
+  background:#ffe9ee;
+  color:#c6204d;
+}
+.actions{
+  display:flex;
+  gap:8px;
+  margin-top:14px;
+}
+.actions button{flex:1}
+
+.size-grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:10px;
+}
+.size-row{
+  border:1px solid #e1e5ee;
+  border-radius:9px;
+  padding:10px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.size-row input[type=number]{
+  width:80px;
+  padding:7px;
+  border:1px solid #ccd2df;
+  border-radius:7px;
+}
+.size-row label{
+  flex:1;
+  font-size:14px;
+  font-weight:600;
+}
+
+.message{
+  padding:11px 13px;
+  border-radius:8px;
+  margin-bottom:16px;
+  display:none;
+}
+.success{
+  display:block;
+  background:#e8f8ee;
+  color:#17733a;
+}
+.error{
+  display:block;
+  background:#ffe9ee;
+  color:#b51e46;
+}
+
+@media(max-width:650px){
+  .top{padding:14px}
+  .container{margin:20px auto;padding:0 12px}
+  .card{padding:18px}
+  .toolbar{align-items:flex-start;flex-direction:column}
+  .size-grid{grid-template-columns:1fr}
+}
+</style>
 </head>
+
 <body>
 
-<div class="top-bar">
-  <div class="container top-inner">
-    <span>🚚 Free delivery on selected orders</span>
-    <span>💳 Secure payments</span>
-    <span>↪ Easy returns</span>
-    <span>⭐ Trusted kidswear</span>
+<div class="top">
+  <div>
+    <div class="logo-title">NINI <span>GARMENTS</span></div>
+    <small>Admin Product Management</small>
+  </div>
+  <button id="logoutBtn" class="logout hidden">Logout</button>
+</div>
+
+<!-- LOGIN -->
+<div id="loginScreen" class="container">
+  <div class="card login">
+    <h2>Admin Login</h2>
+    <p>Login to manage Nini Garments products.</p>
+
+    <div id="loginMessage" class="message"></div>
+
+    <div class="field">
+      <label>Admin Email</label>
+      <input id="loginEmail" type="email" placeholder="Enter admin email">
+    </div>
+
+    <div class="field">
+      <label>Password</label>
+      <input id="loginPassword" type="password" placeholder="Enter password">
+    </div>
+
+    <button id="loginBtn" class="btn primary" style="width:100%">
+      Login
+    </button>
   </div>
 </div>
 
-<header>
-  <div class="container header-main">
-    <a class="brand" href="#home">
-      <img src="nini-logo.jpeg" alt="Nini Garments">
-      <div><strong>NINI</strong><small>GARMENTS</small></div>
-    </a>
+<!-- DASHBOARD -->
+<div id="dashboard" class="container hidden">
 
-    <div class="deliver">⌖ <div><small>Deliver to</small><strong>India⌄</strong></div></div>
-
-    <div class="search">
-      <span>⌕</span>
-      <input id="searchInput" type="search" placeholder="Search for kids clothing, sets, hoodies...">
-      <button id="searchBtn">Search</button>
+  <div class="toolbar">
+    <div>
+      <h1>Products</h1>
+      <div id="productCount" class="meta"></div>
     </div>
 
-    <div class="actions">
-      <a href="#"><b>♙</b><small>Account</small></a>
-      <a href="#"><b>▣</b><small>Orders</small></a>
-      <a href="#"><b>🛒<i id="cartCount">0</i></b><small>Cart</small></a>
-    </div>
+    <button id="addBtn" class="btn primary">
+      + Add Product
+    </button>
   </div>
 
-  <nav>
-    <div class="container nav-inner">
-      <a class="active" href="#categories">All Categories</a>
-      <a href="#hoodies">Hoodies</a>
-      <a href="#sets">Kids Sets</a>
-      <a href="#clothing">Kids Clothing</a>
-      <a href="#new">New Arrivals</a>
-      <a href="#bestsellers">Best Sellers</a>
-      <a href="#under499">Under ₹499</a>
-      <a href="#promise">Nini Promise</a>
-    </div>
-  </nav>
-</header>
+  <div id="dashboardMessage" class="message"></div>
 
-<main id="home">
-<section class="hero">
-  <div class="container hero-grid">
-    <div class="hero-copy">
-      <div class="eyebrow">NINI KIDS COLLECTION</div>
-      <h1>Everyday fashion<br><span>for little stars.</span></h1>
-      <p>Comfortable kidswear, cute sets and everyday essentials for ages 0–6 years.</p>
-      <div class="buttons">
-        <a class="btn primary" href="#categories">Shop Now →</a>
-        <a class="btn outline" href="#categories">Explore Categories</a>
-      </div>
-      <div class="trust"><span>✓ Kids-friendly</span><span>✓ Quality fabrics</span><span>✓ Easy returns</span></div>
+  <div id="products" class="products"></div>
+</div>
+
+<!-- PRODUCT FORM -->
+<div id="formScreen" class="container hidden">
+
+  <div class="card">
+
+    <div class="toolbar">
+      <h2 id="formTitle">Add Product</h2>
+      <button id="backBtn" class="btn secondary">← Back</button>
     </div>
 
-    <div class="hero-visual">
-      <div class="premium">✦ PREMIUM</div>
-      <img class="hero-logo" src="nini-logo.jpeg" alt="Nini Garments logo">
-      <div class="hero-text">
-        <strong>GARMENTS • KIDS FASHION</strong>
-        <em>Comfort • Style • Joy</em>
-      </div>
-      <div class="pill loved">💗 Loved by parents</div>
-      <div class="pill delivery">🚚 Fast delivery</div>
-      <div class="arrivals">NEW<br>ARRIVALS</div>
+    <div id="formMessage" class="message"></div>
+
+    <div class="field">
+      <label>Product Name *</label>
+      <input id="productName" type="text" placeholder="Example: Dino Hoodie Set">
     </div>
+
+    <div class="field">
+      <label>Category *</label>
+      <select id="productCategory">
+        <option value="">Select Category</option>
+        <option value="Hoodies">Hoodies</option>
+        <option value="Kids Sets">Kids Sets</option>
+        <option value="Kids Clothing">Kids Clothing</option>
+        <option value="Winter Wear">Winter Wear</option>
+        <option value="New Arrivals">New Arrivals</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Selling Price (₹) *</label>
+      <input id="productPrice" type="number" min="0" placeholder="699">
+    </div>
+
+    <div class="field">
+      <label>Product Image URL</label>
+      <input id="productImage" type="text" placeholder="https://...">
+      <small class="meta">
+        Abhi image URL use hoga. Image upload/R2 baad mein add karenge.
+      </small>
+    </div>
+
+    <div class="field">
+      <label>Description</label>
+      <textarea id="productDescription" placeholder="Product description"></textarea>
+    </div>
+
+    <h3>Sizes & Stock</h3>
+    <p class="meta">Sirf jis size ko select karoge wahi product mein available hoga.</p>
+
+    <div id="sizeGrid" class="size-grid"></div>
+
+    <br>
+
+    <button id="saveBtn" class="btn primary">
+      Save Product
+    </button>
+
   </div>
-</section>
-
-<section class="services" id="promise">
-  <div class="container services-grid">
-    <div><span>♢</span><p><strong>Quality assured</strong><small>Made for little ones</small></p></div>
-    <div><span>🚚</span><p><strong>Fast delivery</strong><small>Across India</small></p></div>
-    <div><span>↔</span><p><strong>Easy returns</strong><small>Simple & hassle-free</small></p></div>
-    <div><span>🔒</span><p><strong>Secure checkout</strong><small>Safe payments</small></p></div>
-  </div>
-</section>
-
-<section class="categories" id="categories">
-  <div class="container">
-    <div class="section-head">
-      <div><div class="eyebrow">SHOP BY CATEGORY</div><h2>Find something <span>they’ll love</span></h2></div>
-      <a href="#categories">View all →</a>
-    </div>
-    <div class="category-grid">
-      <a class="category pink" id="hoodies" href="#products"><div>🧥</div><h3>Hoodies</h3><p>Warm & stylish</p></a>
-      <a class="category blue" id="sets" href="#products"><div>👕</div><h3>Kids Sets</h3><p>Perfect everyday wear</p></a>
-      <a class="category green" id="clothing" href="#products"><div>👗</div><h3>Kids Clothing</h3><p>Cute styles for little ones</p></a>
-      <a class="category yellow" id="new" href="#products"><div>✨</div><h3>New Arrivals</h3><p>Fresh styles</p></a>
-    </div>
-  </div>
-</section>
-
-<section class="products" id="products">
-  <div class="container">
-    <div class="section-head"><div><div class="eyebrow">OUR COLLECTION</div><h2>Popular <span>kidswear</span></h2></div></div>
-    <div class="product-placeholder">Products will appear here when connected to your existing Nini API.</div>
-  </div>
-</section>
-</main>
+</div>
 
 <script>
-const input=document.getElementById("searchInput");
-document.getElementById("searchBtn").onclick=()=>document.getElementById("products").scrollIntoView({behavior:"smooth"});
-input.addEventListener("keydown",e=>{if(e.key==="Enter")document.getElementById("products").scrollIntoView({behavior:"smooth"})});
+const API_URL = "https://nini-api.msninigarments7368.workers.dev";
+
+const SIZE_OPTIONS = [
+  "0–3 Months",
+  "3–6 Months",
+  "6–12 Months",
+  "1–2 Years",
+  "2–3 Years",
+  "3–4 Years",
+  "4–5 Years",
+  "5–6 Years",
+  "6 Years"
+];
+
+let adminEmail = "";
+let adminPassword = "";
+let products = [];
+let editingId = null;
+
+const $ = id => document.getElementById(id);
+
+function showMessage(id, text, type="success"){
+  const el = $(id);
+  el.textContent = text;
+  el.className = "message " + type;
+}
+
+function hideMessage(id){
+  $(id).className = "message";
+}
+
+function showDashboard(){
+  $("loginScreen").classList.add("hidden");
+  $("formScreen").classList.add("hidden");
+  $("dashboard").classList.remove("hidden");
+  $("logoutBtn").classList.remove("hidden");
+}
+
+function showForm(){
+  $("dashboard").classList.add("hidden");
+  $("formScreen").classList.remove("hidden");
+}
+
+function resetForm(){
+  editingId = null;
+
+  $("formTitle").textContent = "Add Product";
+  $("productName").value = "";
+  $("productCategory").value = "";
+  $("productPrice").value = "";
+  $("productImage").value = "";
+  $("productDescription").value = "";
+  $("saveBtn").textContent = "Save Product";
+
+  SIZE_OPTIONS.forEach(size=>{
+    const cb = document.querySelector(
+      `input[data-size="${CSS.escape(size)}"]`
+    );
+    const stock = document.querySelector(
+      `input[data-stock="${CSS.escape(size)}"]`
+    );
+
+    if(cb) cb.checked = false;
+    if(stock) stock.value = 0;
+    if(stock) stock.disabled = true;
+  });
+
+  hideMessage("formMessage");
+}
+
+function buildSizes(){
+  $("sizeGrid").innerHTML = "";
+
+  SIZE_OPTIONS.forEach((size,index)=>{
+    const row = document.createElement("div");
+    row.className = "size-row";
+
+    row.innerHTML = `
+      <input
+        type="checkbox"
+        id="size_${index}"
+        data-size="${size}"
+      >
+
+      <label for="size_${index}">${size}</label>
+
+      <input
+        type="number"
+        min="0"
+        value="0"
+        disabled
+        data-stock="${size}"
+        title="Stock"
+      >
+    `;
+
+    const checkbox = row.querySelector("input[type=checkbox]");
+    const stock = row.querySelector("input[type=number]");
+
+    checkbox.addEventListener("change",()=>{
+      stock.disabled = !checkbox.checked;
+      if(checkbox.checked && Number(stock.value) === 0){
+        stock.value = 1;
+      }
+    });
+
+    $("sizeGrid").appendChild(row);
+  });
+}
+
+async function login(){
+
+  const email = $("loginEmail").value.trim().toLowerCase();
+  const password = $("loginPassword").value;
+
+  if(!email || !password){
+    showMessage(
+      "loginMessage",
+      "Email and password required.",
+      "error"
+    );
+    return;
+  }
+
+  $("loginBtn").disabled = true;
+  $("loginBtn").textContent = "Logging in...";
+
+  try{
+
+    const response = await fetch(API_URL + "/api/login",{
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json"
+      },
+      body:JSON.stringify({
+        email,
+        password
+      })
+    });
+
+    const data = await response.json();
+
+    if(!response.ok || !data.success){
+      throw new Error(data.error || "Login failed");
+    }
+
+    if(!data.user || data.user.role !== "admin"){
+      throw new Error("This account is not an admin account.");
+    }
+
+    adminEmail = email;
+    adminPassword = password;
+
+    showDashboard();
+    await loadProducts();
+
+  }catch(error){
+
+    showMessage(
+      "loginMessage",
+      error.message,
+      "error"
+    );
+
+  }finally{
+
+    $("loginBtn").disabled = false;
+    $("loginBtn").textContent = "Login";
+  }
+}
+
+async function loadProducts(){
+
+  showMessage(
+    "dashboardMessage",
+    "Loading products...",
+    "success"
+  );
+
+  try{
+
+    const response = await fetch(
+      API_URL + "/api/admin/products",
+      {
+        method:"POST",
+        headers:{
+          "Content-Type":"application/json"
+        },
+        body:JSON.stringify({
+          email:adminEmail,
+          password:adminPassword
+        })
+      }
+    );
+
+    const data = await response.json();
+
+    if(!response.ok || !data.success){
+      throw new Error(data.error || "Could not load products");
+    }
+
+    products = data.products || [];
+
+    renderProducts();
+
+    hideMessage("dashboardMessage");
+
+  }catch(error){
+
+    showMessage(
+      "dashboardMessage",
+      error.message,
+      "error"
+    );
+  }
+}
+
+function renderProducts(){
+
+  $("productCount").textContent =
+    products.length + " product(s)";
+
+  if(!products.length){
+
+    $("products").innerHTML = `
+      <div class="card">
+        <h3>No products found</h3>
+        <p>Add your first product.</p>
+      </div>
+    `;
+
+    return;
+  }
+
+  $("products").innerHTML = products.map(product=>{
+
+    const sizes = Array.isArray(product.sizes)
+      ? product.sizes
+      : [];
+
+    const totalStock = sizes.reduce(
+      (sum,item)=>sum + Number(item.stock || 0),
+      0
+    );
+
+    const sizeText = sizes.length
+      ? sizes.map(s=>`${s.size}: ${s.stock}`).join(" • ")
+      : "No sizes added";
+
+    const image = product.image
+      ? `<img src="${escapeHtml(product.image)}"
+          alt="${escapeHtml(product.name)}"
+          onerror="this.style.display='none';this.nextElementSibling.style.display='block'">`
+      : "";
+
+    return `
+      <div class="product">
+
+        <div class="product-img">
+          ${image}
+          <div class="no-image" style="${product.image ? "display:none" : ""}">
+            No Image
+          </div>
+        </div>
+
+        <div class="product-body">
+
+          <h3>${escapeHtml(product.name)}</h3>
+
+          <div class="meta">
+            ${escapeHtml(product.category || "")}
+          </div>
+
+          <div class="price">
+            ₹${Number(product.price || 0)}
+          </div>
+
+          <div class="meta">
+            ${escapeHtml(sizeText)}
+          </div>
+
+          <span class="stock ${product.active ? "" : "inactive"}">
+            ${product.active
+              ? "Active • Stock " + totalStock
+              : "Inactive"}
+          </span>
+
+          <div class="actions">
+
+            <button
+              class="btn secondary"
+              onclick="editProduct(${product.id})">
+              Edit
+            </button>
+
+            ${
+              product.active
+              ? `<button
+                  class="btn danger"
+                  onclick="deactivateProduct(${product.id})">
+                  Deactivate
+                </button>`
+              : ""
+            }
+
+          </div>
+
+        </div>
+      </div>
+    `;
+
+  }).join("");
+}
+
+function escapeHtml(value){
+  return String(value ?? "")
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#039;");
+}
+
+function editProduct(id){
+
+  const product = products.find(p=>Number(p.id) === Number(id));
+
+  if(!product) return;
+
+  editingId = id;
+
+  $("formTitle").textContent = "Edit Product";
+  $("saveBtn").textContent = "Update Product";
+
+  $("productName").value = product.name || "";
+  $("productCategory").value = product.category || "";
+  $("productPrice").value = product.price || "";
+  $("productImage").value = product.image || "";
+  $("productDescription").value = product.description || "";
+
+  SIZE_OPTIONS.forEach(size=>{
+
+    const checkbox = document.querySelector(
+      `input[data-size="${CSS.escape(size)}"]`
+    );
+
+    const stock = document.querySelector(
+      `input[data-stock="${CSS.escape(size)}"]`
+    );
+
+    const found = (product.sizes || []).find(
+      s => s.size === size
+    );
+
+    checkbox.checked = !!found;
+    stock.disabled = !found;
+    stock.value = found ? Number(found.stock || 0) : 0;
+
+  });
+
+  hideMessage("formMessage");
+  showForm();
+}
+
+function collectSizes(){
+
+  const sizes = [];
+
+  SIZE_OPTIONS.forEach(size=>{
+
+    const checkbox = document.querySelector(
+      `input[data-size="${CSS.escape(size)}"]`
+    );
+
+    const stock = document.querySelector(
+      `input[data-stock="${CSS.escape(size)}"]`
+    );
+
+    if(checkbox && checkbox.checked){
+
+      sizes.push({
+        size,
+        stock:Number(stock.value || 0)
+      });
+
+    }
+
+  });
+
+  return sizes;
+}
+
+async function saveProduct(){
+
+  const name = $("productName").value.trim();
+  const category = $("productCategory").value;
+  const price = Number($("productPrice").value);
+  const image = $("productImage").value.trim();
+  const description = $("productDescription").value.trim();
+  const sizes = collectSizes();
+
+  if(!name || !category || !Number.isFinite(price)){
+    showMessage(
+      "formMessage",
+      "Product name, category and price are required.",
+      "error"
+    );
+    return;
+  }
+
+  if(sizes.length === 0){
+    showMessage(
+      "formMessage",
+      "At least one size select karo.",
+      "error"
+    );
+    return;
+  }
+
+  $("saveBtn").disabled = true;
+  $("saveBtn").textContent =
+    editingId ? "Updating..." : "Saving...";
+
+  const payload = {
+    email:adminEmail,
+    password:adminPassword,
+    name,
+    category,
+    description,
+    price,
+    image,
+    sizes
+  };
+
+  try{
+
+    let url;
+    let method;
+
+    if(editingId){
+
+      url =
+        API_URL +
+        "/api/admin/products/edit/" +
+        editingId;
+
+      method = "PUT";
+
+    }else{
+
+      url =
+        API_URL +
+        "/api/admin/products/add";
+
+      method = "POST";
+    }
+
+    const response = await fetch(url,{
+      method,
+      headers:{
+        "Content-Type":"application/json"
+      },
+      body:JSON.stringify(payload)
+    });
+
+    const data = await response.json();
+
+    if(!response.ok || !data.success){
+      throw new Error(
+        data.error ||
+        (editingId
+          ? "Product update failed"
+          : "Product add failed")
+      );
+    }
+
+    showMessage(
+      "formMessage",
+      editingId
+        ? "Product updated successfully!"
+        : "Product added successfully!",
+      "success"
+    );
+
+    await loadProducts();
+
+    setTimeout(()=>{
+      resetForm();
+      showDashboard();
+    },700);
+
+  }catch(error){
+
+    showMessage(
+      "formMessage",
+      error.message,
+      "error"
+    );
+
+  }finally{
+
+    $("saveBtn").disabled = false;
+    $("saveBtn").textContent =
+      editingId ? "Update Product" : "Save Product";
+  }
+}
+
+async function deactivateProduct(id){
+
+  const product = products.find(
+    p=>Number(p.id) === Number(id)
+  );
+
+  if(!product) return;
+
+  if(!confirm(
+    `Deactivate "${product.name}"?`
+  )){
+    return;
+  }
+
+  try{
+
+    const response = await fetch(
+      API_URL +
+      "/api/admin/products/delete/" +
+      id,
+      {
+        method:"POST",
+        headers:{
+          "Content-Type":"application/json"
+        },
+        body:JSON.stringify({
+          email:adminEmail,
+          password:adminPassword
+        })
+      }
+    );
+
+    const data = await response.json();
+
+    if(!response.ok || !data.success){
+      throw new Error(
+        data.error || "Could not deactivate product"
+      );
+    }
+
+    showMessage(
+      "dashboardMessage",
+      "Product deactivated successfully.",
+      "success"
+    );
+
+    await loadProducts();
+
+  }catch(error){
+
+    showMessage(
+      "dashboardMessage",
+      error.message,
+      "error"
+    );
+  }
+}
+
+$("loginBtn").addEventListener("click",login);
+
+$("loginPassword").addEventListener("keydown",e=>{
+  if(e.key === "Enter") login();
+});
+
+$("addBtn").addEventListener("click",()=>{
+  resetForm();
+  showForm();
+});
+
+$("backBtn").addEventListener("click",()=>{
+  resetForm();
+  showDashboard();
+});
+
+$("saveBtn").addEventListener("click",saveProduct);
+
+$("logoutBtn").addEventListener("click",()=>{
+  adminEmail = "";
+  adminPassword = "";
+  products = [];
+
+  $("logoutBtn").classList.add("hidden");
+  $("dashboard").classList.add("hidden");
+  $("formScreen").classList.add("hidden");
+  $("loginScreen").classList.remove("hidden");
+
+  $("loginPassword").value = "";
+});
+
+buildSizes();
 </script>
+
 </body>
 </html>
