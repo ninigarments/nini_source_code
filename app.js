@@ -1,72 +1,14 @@
 /* =========================================================
    NINI GARMENTS — FRONTEND SHOPPING SYSTEM
-   Works with the current index.html + style.css
+   LIVE D1 / API PRODUCT VERSION
    ========================================================= */
 
-/* ---------- PRODUCT DATA ---------- */
 
-const products = [
-  {
-    id: 1,
-    name: "Classic Kids Hoodie",
-    category: "Hoodies",
-    price: 399,
-    mrp: 699,
-    discount: 43,
-    age: "2–6 Years",
-    image: "nini-logo.jpeg"
-  },
-  {
-    id: 2,
-    name: "Cute Everyday Kids Set",
-    category: "Kids Sets",
-    price: 449,
-    mrp: 799,
-    discount: 44,
-    age: "1–5 Years",
-    image: "nini-logo.jpeg"
-  },
-  {
-    id: 3,
-    name: "Comfort Cotton T-Shirt",
-    category: "Clothing",
-    price: 299,
-    mrp: 499,
-    discount: 40,
-    age: "2–6 Years",
-    image: "nini-logo.jpeg"
-  },
-  {
-    id: 4,
-    name: "Premium Kids Hoodie",
-    category: "Hoodies",
-    price: 499,
-    mrp: 899,
-    discount: 44,
-    age: "3–6 Years",
-    image: "nini-logo.jpeg"
-  },
-  {
-    id: 5,
-    name: "Little Star Co-ord Set",
-    category: "Kids Sets",
-    price: 499,
-    mrp: 899,
-    discount: 44,
-    age: "1–6 Years",
-    image: "nini-logo.jpeg"
-  },
-  {
-    id: 6,
-    name: "Soft Cotton Kids Wear",
-    category: "Clothing",
-    price: 349,
-    mrp: 599,
-    discount: 42,
-    age: "0–5 Years",
-    image: "nini-logo.jpeg"
-  }
-];
+/* ---------- LIVE PRODUCT DATA ---------- */
+
+const API_URL = "https://nini-api.msninigarments7368.workers.dev";
+
+let products = [];
 
 
 /* ---------- CART ---------- */
@@ -76,10 +18,79 @@ let cart = JSON.parse(localStorage.getItem("niniCart")) || [];
 
 /* ---------- INITIAL LOAD ---------- */
 
-document.addEventListener("DOMContentLoaded", function () {
-  renderProducts(products);
+document.addEventListener("DOMContentLoaded", async function () {
+
+  await loadProducts();
+
   updateCartCount();
+
 });
+
+
+async function loadProducts() {
+
+  const container = document.getElementById("products");
+
+  if (container) {
+
+    container.innerHTML = `
+      <div class="loading-state">
+        Loading Nini Garments products...
+      </div>
+    `;
+
+  }
+
+
+  try {
+
+    const response = await fetch(`${API_URL}/api/products`, {
+      method: "GET"
+    });
+
+
+    if (!response.ok) {
+
+      throw new Error("Product API request failed");
+
+    }
+
+
+    const data = await response.json();
+
+
+    products = Array.isArray(data.products)
+      ? data.products
+      : [];
+
+
+    renderProducts(products);
+
+
+  } catch (error) {
+
+    console.error("Nini product loading error:", error);
+
+
+    if (container) {
+
+      container.innerHTML = `
+        <div class="loading-state">
+
+          <strong>Unable to load products.</strong>
+
+          <br>
+
+          Please refresh the page and try again.
+
+        </div>
+      `;
+
+    }
+
+  }
+
+}
 
 
 /* ---------- PRODUCT RENDER ---------- */
@@ -88,66 +99,175 @@ function renderProducts(list) {
 
   const container = document.getElementById("products");
 
+
   if (!container) return;
 
+
   if (!list || list.length === 0) {
+
     container.innerHTML = `
       <div class="loading-state">
+
         <strong>No products found.</strong>
+
         <br>
+
         Try another search or category.
+
       </div>
     `;
+
     return;
+
   }
+
 
   container.innerHTML = list.map(product => {
 
+
+    const sizes = Array.isArray(product.sizes)
+
+      ? product.sizes.filter(
+          size => Number(size.stock) > 0
+        )
+
+      : [];
+
+
+    const image =
+      product.image ||
+      "nini-logo.jpeg";
+
+
+    const sizeOptions = sizes.length
+
+      ? sizes.map(size => `
+
+          <option value="${escapeHTML(size.size)}">
+
+            ${escapeHTML(size.size)}
+
+          </option>
+
+        `).join("")
+
+
+      : `
+
+          <option value="">
+
+            Out of stock
+
+          </option>
+
+        `;
+
+
+    const totalStock = sizes.reduce(
+
+      (sum, size) =>
+
+        sum + Number(size.stock || 0),
+
+      0
+
+    );
+
+
     return `
+
       <article class="product">
 
+
         <img
-          src="${product.image}"
+
+          src="${escapeHTML(image)}"
+
           alt="${escapeHTML(product.name)}"
+
           onerror="this.src='nini-logo.jpeg'"
+
         >
+
 
         <div class="product-info">
 
-          <h3>${escapeHTML(product.name)}</h3>
+
+          <h3>
+
+            ${escapeHTML(product.name)}
+
+          </h3>
+
 
           <div class="price">
-            ₹${Number(product.price).toLocaleString("en-IN")}
+
+            ₹${Number(product.price || 0).toLocaleString("en-IN")}
+
           </div>
+
 
           <div class="stock">
-            <del>₹${Number(product.mrp).toLocaleString("en-IN")}</del>
-            &nbsp;
-            <span>${product.discount}% off</span>
-            &nbsp; • &nbsp;
-            ${escapeHTML(product.age)}
+
+            ${
+              totalStock > 0
+
+                ? `✓ ${totalStock} in stock`
+
+                : `Out of stock`
+            }
+
           </div>
 
-          <select id="size-${product.id}">
-            <option value="">Select Size</option>
-            <option value="0–1Y">0–1 Years</option>
-            <option value="1–2Y">1–2 Years</option>
-            <option value="2–3Y">2–3 Years</option>
-            <option value="3–4Y">3–4 Years</option>
-            <option value="4–5Y">4–5 Years</option>
-            <option value="5–6Y">5–6 Years</option>
+
+          <select
+
+            id="size-${product.id}"
+
+            ${sizes.length ? "" : "disabled"}
+
+          >
+
+            <option value="">
+
+              Select Size
+
+            </option>
+
+            ${sizeOptions}
+
           </select>
 
-          <button onclick="addToCart(${product.id})">
-            Add to Cart 🛒
+
+          <button
+
+            onclick="addToCart(${product.id})"
+
+            ${sizes.length ? "" : "disabled"}
+
+          >
+
+            ${
+              sizes.length
+
+                ? "Add to Cart 🛒"
+
+                : "Out of Stock"
+            }
+
           </button>
+
 
         </div>
 
+
       </article>
+
     `;
 
+
   }).join("");
+
 }
 
 
@@ -155,50 +275,93 @@ function renderProducts(list) {
 
 function marketSearchProducts(query) {
 
+
   const search = String(query || "")
+
     .trim()
+
     .toLowerCase();
+
 
   if (!search) {
 
+
     renderProducts(products);
 
-    const label = document.getElementById("resultLabel");
+
+    const label =
+      document.getElementById("resultLabel");
+
 
     if (label) {
+
       label.textContent = "All products";
+
     }
 
+
     return;
+
   }
+
 
   const filtered = products.filter(product => {
 
-    const name = String(product.name || "").toLowerCase();
-    const category = String(product.category || "").toLowerCase();
-    const age = String(product.age || "").toLowerCase();
+
+    const name =
+      String(product.name || "")
+        .toLowerCase();
+
+
+    const category =
+      String(product.category || "")
+        .toLowerCase();
+
+
+    const age =
+      String(product.age || "")
+        .toLowerCase();
+
 
     return (
+
       name.includes(search) ||
+
       category.includes(search) ||
+
       age.includes(search)
+
     );
 
   });
 
+
   renderProducts(filtered);
 
-  const label = document.getElementById("resultLabel");
+
+  const label =
+    document.getElementById("resultLabel");
+
 
   if (label) {
+
+
     label.textContent =
+
       filtered.length +
+
       " result" +
+
       (filtered.length !== 1 ? "s" : "") +
+
       ' for "' +
+
       search +
+
       '"';
+
   }
+
 }
 
 
@@ -206,44 +369,76 @@ function marketSearchProducts(query) {
 
 function filterCat(category) {
 
-  const value = String(category || "")
-    .trim()
-    .toLowerCase();
+
+  const value =
+    String(category || "")
+
+      .trim()
+
+      .toLowerCase();
+
 
   if (!value) {
+
     renderProducts(products);
+
     return;
+
   }
+
 
   const filtered = products.filter(product => {
 
+
     const productCategory =
-      String(product.category || "").toLowerCase();
+
+      String(product.category || "")
+
+        .toLowerCase();
+
 
     if (value === "clothing") {
+
       return productCategory === "clothing";
+
     }
+
 
     return productCategory === value;
 
   });
 
+
   renderProducts(filtered);
 
-  const label = document.getElementById("resultLabel");
+
+  const label =
+    document.getElementById("resultLabel");
+
 
   if (label) {
+
     label.textContent = category;
+
   }
 
-  const shop = document.getElementById("shop");
+
+  const shop =
+    document.getElementById("shop");
+
 
   if (shop) {
+
     shop.scrollIntoView({
+
       behavior: "smooth",
+
       block: "start"
+
     });
+
   }
+
 }
 
 
@@ -251,34 +446,71 @@ function filterCat(category) {
 
 function sortMarketProducts(type) {
 
+
   const sorted = [...products];
+
 
   switch (type) {
 
+
     case "low":
+
       sorted.sort(
-        (a, b) => Number(a.price) - Number(b.price)
+
+        (a, b) =>
+
+          Number(a.price) -
+
+          Number(b.price)
+
       );
+
       break;
+
 
     case "high":
+
       sorted.sort(
-        (a, b) => Number(b.price) - Number(a.price)
+
+        (a, b) =>
+
+          Number(b.price) -
+
+          Number(a.price)
+
       );
+
       break;
+
 
     case "name":
+
       sorted.sort(
+
         (a, b) =>
-          String(a.name).localeCompare(String(b.name))
+
+          String(a.name)
+
+            .localeCompare(
+
+              String(b.name)
+
+            )
+
       );
+
       break;
+
 
     default:
+
       break;
+
   }
 
+
   renderProducts(sorted);
+
 }
 
 
@@ -286,56 +518,159 @@ function sortMarketProducts(type) {
 
 function addToCart(productId) {
 
+
   const product = products.find(
-    p => Number(p.id) === Number(productId)
+
+    p =>
+
+      Number(p.id) ===
+
+      Number(productId)
+
   );
+
 
   if (!product) return;
 
+
   const sizeElement =
-    document.getElementById(`size-${productId}`);
+
+    document.getElementById(
+
+      `size-${productId}`
+
+    );
+
 
   const size =
-    sizeElement ? sizeElement.value : "";
+
+    sizeElement
+
+      ? sizeElement.value
+
+      : "";
+
 
   if (!size) {
 
+
     alert("Please select a size first.");
 
+
     if (sizeElement) {
+
       sizeElement.focus();
+
     }
 
+
     return;
+
   }
 
-  const existing = cart.find(item =>
-    Number(item.id) === Number(productId) &&
-    item.size === size
+
+  const selectedSize =
+
+    Array.isArray(product.sizes)
+
+      ? product.sizes.find(
+
+          s =>
+
+            String(s.size) ===
+
+            String(size)
+
+        )
+
+      : null;
+
+
+  if (
+
+    !selectedSize ||
+
+    Number(selectedSize.stock) <= 0
+
+  ) {
+
+    alert("This size is out of stock.");
+
+    return;
+
+  }
+
+
+  const existing = cart.find(
+
+    item =>
+
+      Number(item.id) ===
+
+        Number(productId) &&
+
+      item.size === size
+
   );
+
 
   if (existing) {
 
+
+    if (
+
+      existing.quantity >=
+
+      Number(selectedSize.stock)
+
+    ) {
+
+      alert("No more stock available for this size.");
+
+      return;
+
+    }
+
+
     existing.quantity += 1;
+
 
   } else {
 
+
     cart.push({
+
       id: product.id,
+
       name: product.name,
+
       category: product.category,
+
       price: Number(product.price),
+
       size: size,
+
       quantity: 1,
+
       image: product.image
+
     });
 
   }
 
+
   saveCart();
+
+
   updateCartCount();
 
-  alert(`${product.name} added to cart.`);
+
+  alert(
+
+    `${product.name} added to cart.`
+
+  );
+
 }
 
 
@@ -343,18 +678,34 @@ function addToCart(productId) {
 
 function updateCartCount() {
 
+
   const countElement =
-    document.getElementById("cartCount");
+
+    document.getElementById(
+
+      "cartCount"
+
+    );
+
 
   if (!countElement) return;
 
+
   const total = cart.reduce(
+
     (sum, item) =>
-      sum + Number(item.quantity || 0),
+
+      sum +
+
+      Number(item.quantity || 0),
+
     0
+
   );
 
+
   countElement.textContent = total;
+
 }
 
 
@@ -362,9 +713,13 @@ function updateCartCount() {
 
 function saveCart() {
 
+
   localStorage.setItem(
+
     "niniCart",
+
     JSON.stringify(cart)
+
   );
 
 }
@@ -374,16 +729,29 @@ function saveCart() {
 
 function openCart() {
 
+
   const modal =
-    document.getElementById("cartModal");
+
+    document.getElementById(
+
+      "cartModal"
+
+    );
+
 
   if (!modal) return;
 
+
   renderCart();
+
 
   modal.style.display = "flex";
 
-  document.body.style.overflow = "hidden";
+
+  document.body.style.overflow =
+
+    "hidden";
+
 }
 
 
@@ -391,14 +759,24 @@ function openCart() {
 
 function closeCart() {
 
+
   const modal =
-    document.getElementById("cartModal");
+
+    document.getElementById(
+
+      "cartModal"
+
+    );
+
 
   if (!modal) return;
 
+
   modal.style.display = "none";
 
+
   document.body.style.overflow = "";
+
 }
 
 
@@ -406,103 +784,213 @@ function closeCart() {
 
 function renderCart() {
 
+
   const container =
-    document.getElementById("cartItems");
+
+    document.getElementById(
+
+      "cartItems"
+
+    );
+
 
   const totalElement =
-    document.getElementById("cartTotal");
+
+    document.getElementById(
+
+      "cartTotal"
+
+    );
+
 
   if (!container) return;
 
+
   if (cart.length === 0) {
 
+
     container.innerHTML = `
+
       <div class="loading-state">
+
         🛒 Your cart is empty.
+
         <br><br>
+
         Add some cute kidswear to continue shopping.
+
       </div>
+
     `;
+
 
     if (totalElement) {
+
       totalElement.textContent = "0";
+
     }
 
+
     return;
+
   }
 
-  container.innerHTML = cart.map((item, index) => {
 
-    const itemTotal =
-      Number(item.price) *
-      Number(item.quantity);
+  container.innerHTML =
 
-    return `
-      <div class="cart-line">
+    cart.map((item, index) => {
 
-        <div>
-          <strong>${escapeHTML(item.name)}</strong>
 
-          <div style="color:#68748b;margin-top:5px">
-            Size: ${escapeHTML(item.size)}
+      const itemTotal =
+
+        Number(item.price) *
+
+        Number(item.quantity);
+
+
+      return `
+
+
+        <div class="cart-line">
+
+
+          <div>
+
+
+            <strong>
+
+              ${escapeHTML(item.name)}
+
+            </strong>
+
+
+            <div
+
+              style="color:#68748b;margin-top:5px"
+
+            >
+
+              Size:
+
+              ${escapeHTML(item.size)}
+
+            </div>
+
+
+            <div
+
+              style="margin-top:5px"
+
+            >
+
+              ₹${Number(item.price)
+
+                .toLocaleString("en-IN")}
+
+              × ${item.quantity}
+
+            </div>
+
+
           </div>
 
-          <div style="margin-top:5px">
-            ₹${Number(item.price).toLocaleString("en-IN")}
-            × ${item.quantity}
+
+          <strong>
+
+            ₹${itemTotal
+
+              .toLocaleString("en-IN")}
+
+          </strong>
+
+
+          <div
+
+            style="display:flex;gap:8px;align-items:center"
+
+          >
+
+
+            <button
+
+              onclick="changeCartQuantity(${index}, -1)"
+
+              style="border:1px solid #ddd;background:#fff;color:#111;padding:5px 10px;border-radius:4px"
+
+            >
+
+              −
+
+            </button>
+
+
+            <span>
+
+              ${item.quantity}
+
+            </span>
+
+
+            <button
+
+              onclick="changeCartQuantity(${index}, 1)"
+
+              style="border:1px solid #ddd;background:#fff;color:#111;padding:5px 10px;border-radius:4px"
+
+            >
+
+              +
+
+            </button>
+
+
+            <button
+
+              onclick="removeFromCart(${index})"
+
+              style="margin-left:8px"
+
+            >
+
+              Remove
+
+            </button>
+
+
           </div>
-        </div>
 
-        <strong>
-          ₹${itemTotal.toLocaleString("en-IN")}
-        </strong>
-
-        <div style="display:flex;gap:8px;align-items:center">
-
-          <button
-            onclick="changeCartQuantity(${index}, -1)"
-            style="border:1px solid #ddd;background:#fff;color:#111;padding:5px 10px;border-radius:4px"
-          >
-            −
-          </button>
-
-          <span>${item.quantity}</span>
-
-          <button
-            onclick="changeCartQuantity(${index}, 1)"
-            style="border:1px solid #ddd;background:#fff;color:#111;padding:5px 10px;border-radius:4px"
-          >
-            +
-          </button>
-
-          <button
-            onclick="removeFromCart(${index})"
-            style="margin-left:8px"
-          >
-            Remove
-          </button>
 
         </div>
 
-      </div>
-    `;
+      `;
 
-  }).join("");
+
+    }).join("");
+
 
   const total = cart.reduce(
+
     (sum, item) =>
+
       sum +
+
       Number(item.price) *
+
       Number(item.quantity),
+
     0
+
   );
+
 
   if (totalElement) {
 
     totalElement.textContent =
+
       total.toLocaleString("en-IN");
 
   }
+
 }
 
 
@@ -510,9 +998,12 @@ function renderCart() {
 
 function changeCartQuantity(index, change) {
 
+
   if (!cart[index]) return;
 
+
   cart[index].quantity += change;
+
 
   if (cart[index].quantity <= 0) {
 
@@ -520,9 +1011,15 @@ function changeCartQuantity(index, change) {
 
   }
 
+
   saveCart();
+
+
   updateCartCount();
+
+
   renderCart();
+
 }
 
 
@@ -530,13 +1027,21 @@ function changeCartQuantity(index, change) {
 
 function removeFromCart(index) {
 
+
   if (!cart[index]) return;
+
 
   cart.splice(index, 1);
 
+
   saveCart();
+
+
   updateCartCount();
+
+
   renderCart();
+
 }
 
 
@@ -544,16 +1049,24 @@ function removeFromCart(index) {
 
 function placeOrder() {
 
+
   if (cart.length === 0) {
+
 
     alert("Your cart is empty.");
 
+
     return;
+
   }
 
+
   alert(
+
     "Your cart is ready for checkout.\n\n" +
+
     "Checkout and payment will be connected in the next step."
+
   );
 
 }
@@ -563,11 +1076,17 @@ function placeOrder() {
 
 function escapeHTML(value) {
 
+
   return String(value ?? "")
+
     .replace(/&/g, "&amp;")
+
     .replace(/</g, "&lt;")
+
     .replace(/>/g, "&gt;")
+
     .replace(/"/g, "&quot;")
+
     .replace(/'/g, "&#039;");
 
 }
@@ -575,10 +1094,19 @@ function escapeHTML(value) {
 
 /* ---------- CLOSE CART WITH ESC ---------- */
 
-document.addEventListener("keydown", function (event) {
+document.addEventListener(
 
-  if (event.key === "Escape") {
-    closeCart();
+  "keydown",
+
+  function (event) {
+
+
+    if (event.key === "Escape") {
+
+      closeCart();
+
+    }
+
   }
 
-});
+);
