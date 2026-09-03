@@ -304,9 +304,41 @@ h1,h2,h3{margin-top:0}
       </select>
     </div>
 
+    <div class="price-row">
+      <div class="field">
+        <label>MRP (₹) *</label>
+        <input id="productMrp" type="number" min="0" placeholder="999">
+      </div>
+      <div class="field">
+        <label>Selling Price (₹) *</label>
+        <input id="productPrice" type="number" min="0" placeholder="699">
+      </div>
+      <div class="field">
+        <label>Discount</label>
+        <div id="discountDisplay" class="discount-box">0% OFF</div>
+      </div>
+    </div>
+
     <div class="field">
-      <label>Selling Price (₹) *</label>
-      <input id="productPrice" type="number" min="0" placeholder="699">
+      <label>Age Group</label>
+      <select id="productAgeGroup">
+        <option value="">Select Age Group</option>
+        <option value="0–3 Months">0–3 Months</option>
+        <option value="3–6 Months">3–6 Months</option>
+        <option value="6–12 Months">6–12 Months</option>
+        <option value="1–2 Years">1–2 Years</option>
+        <option value="2–3 Years">2–3 Years</option>
+        <option value="3–4 Years">3–4 Years</option>
+        <option value="4–5 Years">4–5 Years</option>
+        <option value="5–6 Years">5–6 Years</option>
+        <option value="6 Years">6 Years</option>
+        <option value="0–6 Years">0–6 Years</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>SKU</label>
+      <input id="productSku" type="text" placeholder="Example: NG-HOOD-001">
     </div>
 
     <div class="field">
@@ -320,6 +352,21 @@ h1,h2,h3{margin-top:0}
     <div class="field">
       <label>Description</label>
       <textarea id="productDescription" placeholder="Product description"></textarea>
+    </div>
+
+    <div class="field">
+      <label>Marketing</label>
+      <div class="check-grid">
+        <label class="check-item"><input id="productFeatured" type="checkbox"> Featured Product</label>
+        <label class="check-item"><input id="productNewArrival" type="checkbox"> New Arrival</label>
+        <label class="check-item"><input id="productBestSeller" type="checkbox"> Best Seller</label>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Tags</label>
+      <input id="productTags" type="text" placeholder="hoodie, winter, boys">
+      <small class="meta">Multiple tags comma se separate karo.</small>
     </div>
 
     <h3>Sizes & Stock</h3>
@@ -386,9 +433,17 @@ function resetForm(){
   $("formTitle").textContent = "Add Product";
   $("productName").value = "";
   $("productCategory").value = "";
+  $("productMrp").value = "";
   $("productPrice").value = "";
+  $("discountDisplay").textContent = "0% OFF";
+  $("productAgeGroup").value = "";
+  $("productSku").value = "";
   $("productImage").value = "";
   $("productDescription").value = "";
+  $("productFeatured").checked = false;
+  $("productNewArrival").checked = false;
+  $("productBestSeller").checked = false;
+  $("productTags").value = "";
   $("saveBtn").textContent = "Save Product";
 
   SIZE_OPTIONS.forEach(size=>{
@@ -660,6 +715,18 @@ function escapeHtml(value){
     .replace(/'/g,"&#039;");
 }
 
+function updateDiscount(){
+  const mrp = Number($("productMrp").value || 0);
+  const price = Number($("productPrice").value || 0);
+  if(!mrp || !price || price > mrp){
+    $("discountDisplay").textContent =
+      price > mrp ? "Invalid: Selling > MRP" : "0% OFF";
+    return;
+  }
+  const discount = Math.round(((mrp - price) / mrp) * 100);
+  $("discountDisplay").textContent = discount + "% OFF";
+}
+
 function editProduct(id){
 
   const product = products.find(p=>Number(p.id) === Number(id));
@@ -673,9 +740,17 @@ function editProduct(id){
 
   $("productName").value = product.name || "";
   $("productCategory").value = product.category || "";
-  $("productPrice").value = product.price || "";
+  $("productMrp").value = product.mrp ?? product.price ?? "";
+  $("productPrice").value = product.price ?? "";
+  $("productAgeGroup").value = product.age_group || "";
+  $("productSku").value = product.sku || "";
   $("productImage").value = product.image || "";
   $("productDescription").value = product.description || "";
+  $("productFeatured").checked = Number(product.featured || 0) === 1;
+  $("productNewArrival").checked = Number(product.new_arrival || 0) === 1;
+  $("productBestSeller").checked = Number(product.best_seller || 0) === 1;
+  $("productTags").value = product.tags || "";
+  updateDiscount();
 
   SIZE_OPTIONS.forEach(size=>{
 
@@ -733,19 +808,37 @@ async function saveProduct(){
 
   const name = $("productName").value.trim();
   const category = $("productCategory").value;
+  const mrp = Number($("productMrp").value);
   const price = Number($("productPrice").value);
+  const age_group = $("productAgeGroup").value;
+  const sku = $("productSku").value.trim();
   const image = $("productImage").value.trim();
   const description = $("productDescription").value.trim();
+  const featured = $("productFeatured").checked;
+  const new_arrival = $("productNewArrival").checked;
+  const best_seller = $("productBestSeller").checked;
+  const tags = $("productTags").value.trim();
   const sizes = collectSizes();
 
-  if(!name || !category || !Number.isFinite(price)){
+  if(!name || !category || !Number.isFinite(mrp) || !Number.isFinite(price)){
     showMessage(
       "formMessage",
-      "Product name, category and price are required.",
+      "Product name, category, MRP and selling price are required.",
       "error"
     );
     return;
   }
+
+  if(mrp < 0 || price < 0 || price > mrp){
+    showMessage(
+      "formMessage",
+      "Selling price MRP se greater nahi ho sakta.",
+      "error"
+    );
+    return;
+  }
+
+  updateDiscount();
 
   if(sizes.length === 0){
     showMessage(
@@ -767,6 +860,13 @@ async function saveProduct(){
     category,
     description,
     price,
+    mrp,
+    age_group,
+    sku,
+    featured,
+    new_arrival,
+    best_seller,
+    tags,
     image,
     sizes
   };
@@ -919,6 +1019,9 @@ $("backBtn").addEventListener("click",()=>{
 });
 
 $("saveBtn").addEventListener("click",saveProduct);
+
+$("productMrp").addEventListener("input",updateDiscount);
+$("productPrice").addEventListener("input",updateDiscount);
 
 $("logoutBtn").addEventListener("click",()=>{
   adminEmail = "";
