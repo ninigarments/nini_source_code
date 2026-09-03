@@ -6,6 +6,27 @@
   <meta name="description" content="Nini Garments - Kids fashion marketplace for ages 0–6 years.">
   <title>Nini Garments | Kids Fashion</title>
   <link rel="stylesheet" href="style.css">
+  <style>
+    #productDetailContent {
+      min-width: 0;
+    }
+    #productDetailContent > .nini-product-detail-grid > div {
+      min-width: 0;
+    }
+    @media (max-width: 700px) {
+      #productDetailModal {
+        padding: 10px !important;
+      }
+      #productDetailModal .cart-panel {
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+      .nini-product-detail-grid {
+        grid-template-columns: 1fr !important;
+        gap: 16px !important;
+      }
+    }
+  </style>
 </head>
 
 <body>
@@ -277,8 +298,9 @@
   </main>
 
 
-  <div id="productDetailModal" class="cart-modal" onclick="if(event.target === this) closeProductDetail()">
-    <div class="cart-panel" style="max-width:720px;max-height:90vh;overflow:auto">
+  <div id="productDetailModal" class="cart-modal" style="align-items:center;justify-content:center;padding:16px;box-sizing:border-box"
+       onclick="if(event.target === this) closeProductDetail()">
+    <div class="cart-panel" style="width:min(720px,100%);max-width:720px;max-height:90vh;overflow-x:hidden;overflow-y:auto;box-sizing:border-box">
       <div class="cart-header">
         <div><span class="section-kicker">PRODUCT DETAILS</span><h2 id="detailProductName">Product</h2></div>
         <button class="close-cart" onclick="closeProductDetail()">×</button>
@@ -343,7 +365,7 @@
       name.textContent = product.name || "Product";
 
       content.innerHTML = `
-        <div style="display:grid;grid-template-columns:minmax(220px,1fr) minmax(240px,1fr);gap:24px;align-items:start">
+        <div class="nini-product-detail-grid" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;align-items:start">
           <div>
             <img src="${escapeHTML(image)}"
                  alt="${escapeHTML(product.name)}"
