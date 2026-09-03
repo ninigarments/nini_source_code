@@ -1085,32 +1085,104 @@ function removeFromCart(index) {
 }
 
 
-/* ---------- PLACE ORDER ---------- */
+/* ---------- CHECKOUT ---------- */
 
 function placeOrder() {
-
-
   if (cart.length === 0) {
-
-
     alert("Your cart is empty.");
-
-
     return;
-
   }
-
-
-  alert(
-
-    "Your cart is ready for checkout.\n\n" +
-
-    "Checkout and payment will be connected in the next step."
-
-  );
-
+  ensureCheckoutModal();
+  renderCheckout();
+  const modal = document.getElementById("checkoutModal");
+  modal.style.display = "flex";
+  document.body.style.overflow = "hidden";
 }
 
+function closeCheckout() {
+  const modal = document.getElementById("checkoutModal");
+  if (!modal) return;
+  modal.style.display = "none";
+  document.body.style.overflow = "";
+}
+
+function ensureCheckoutModal() {
+  if (document.getElementById("checkoutModal")) return;
+  const modal = document.createElement("div");
+  modal.id = "checkoutModal";
+  modal.className = "cart-modal";
+  modal.onclick = function(event) {
+    if (event.target === modal) closeCheckout();
+  };
+  modal.innerHTML = `
+    <div class="cart-panel" style="max-width:520px;max-height:90vh;overflow:auto">
+      <div class="cart-header">
+        <div><span class="section-kicker">CHECKOUT</span><h2>Delivery Details</h2></div>
+        <button class="close-cart" type="button" onclick="closeCheckout()">×</button>
+      </div>
+      <form id="checkoutForm" onsubmit="submitCheckout(event)" style="display:grid;gap:12px">
+        <label>Full Name *
+          <input id="checkoutName" required type="text" autocomplete="name" placeholder="Enter your full name">
+        </label>
+        <label>Mobile Number *
+          <input id="checkoutMobile" required type="tel" inputmode="numeric" maxlength="10" pattern="[6-9][0-9]{9}" autocomplete="tel" placeholder="10-digit mobile number">
+        </label>
+        <label>Full Address *
+          <textarea id="checkoutAddress" required rows="3" autocomplete="street-address" placeholder="House no., street, locality"></textarea>
+        </label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <label>City *
+            <input id="checkoutCity" required type="text" autocomplete="address-level2" placeholder="City">
+          </label>
+          <label>State *
+            <input id="checkoutState" required type="text" autocomplete="address-level1" placeholder="State">
+          </label>
+        </div>
+        <label>PIN Code *
+          <input id="checkoutPin" required type="text" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" autocomplete="postal-code" placeholder="6-digit PIN code">
+        </label>
+        <div style="background:#f7f8fa;border-radius:10px;padding:14px">
+          <strong>Order Summary</strong>
+          <div id="checkoutSummary" style="margin-top:10px"></div>
+        </div>
+        <button type="submit" class="market-btn primary">Confirm Order →</button>
+      </form>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
+function renderCheckout() {
+  const summary = document.getElementById("checkoutSummary");
+  const total = cart.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0), 0);
+  if (summary) {
+    summary.innerHTML = cart.map(item => `
+      <div style="display:flex;justify-content:space-between;gap:10px;margin-bottom:8px">
+        <span>${escapeHTML(item.name)} × ${item.quantity}<small style="display:block;color:#68748b">Size: ${escapeHTML(item.size)}</small></span>
+        <strong>₹${(Number(item.price || 0) * Number(item.quantity || 0)).toLocaleString("en-IN")}</strong>
+      </div>
+    `).join("") + `<hr><div style="display:flex;justify-content:space-between;font-size:18px"><strong>Total</strong><strong>₹${total.toLocaleString("en-IN")}</strong></div>`;
+  }
+}
+
+function submitCheckout(event) {
+  event.preventDefault();
+  const form = document.getElementById("checkoutForm");
+  if (!form || !form.reportValidity()) return;
+  const mobile = document.getElementById("checkoutMobile").value.trim();
+  const pin = document.getElementById("checkoutPin").value.trim();
+  if (!/^[6-9]\d{9}$/.test(mobile)) {
+    alert("Please enter a valid 10-digit mobile number.");
+    return;
+  }
+  if (!/^\d{6}$/.test(pin)) {
+    alert("Please enter a valid 6-digit PIN code.");
+    return;
+  }
+  alert("Your details are valid. Backend order submission will be connected in the next step.");
+}
+
+/* ---------- PLACE ORDER (legacy entry point) ---------- */
 
 /* ---------- ESCAPE HTML ---------- */
 
