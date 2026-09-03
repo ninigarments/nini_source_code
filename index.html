@@ -276,6 +276,17 @@
     </footer>
   </main>
 
+
+  <div id="productDetailModal" class="cart-modal" onclick="if(event.target === this) closeProductDetail()">
+    <div class="cart-panel" style="max-width:720px;max-height:90vh;overflow:auto">
+      <div class="cart-header">
+        <div><span class="section-kicker">PRODUCT DETAILS</span><h2 id="detailProductName">Product</h2></div>
+        <button class="close-cart" onclick="closeProductDetail()">×</button>
+      </div>
+      <div id="productDetailContent"></div>
+    </div>
+  </div>
+
   <div id="cartModal" class="cart-modal" onclick="if(event.target === this) closeCart()">
     <div class="cart-panel">
       <div class="cart-header">
@@ -312,6 +323,93 @@
       if(type === "name") copy.sort((a,b)=>String(a.name||"").localeCompare(String(b.name||"")));
       renderProducts(copy);
     }
+
+    function openProductDetail(productId){
+      const product = products.find(p => Number(p.id) === Number(productId));
+      if(!product) return;
+
+      const modal = document.getElementById("productDetailModal");
+      const content = document.getElementById("productDetailContent");
+      const name = document.getElementById("detailProductName");
+      if(!modal || !content || !name) return;
+
+      const image = product.image || "nini-logo.jpeg";
+      const price = Number(product.price || 0);
+      const mrp = Number(product.mrp || 0);
+      const discount = Number(product.discount || 0);
+      const sizes = Array.isArray(product.sizes) ? product.sizes : [];
+      const inStockSizes = sizes.filter(s => Number(s.stock || 0) > 0);
+
+      name.textContent = product.name || "Product";
+
+      content.innerHTML = `
+        <div style="display:grid;grid-template-columns:minmax(220px,1fr) minmax(240px,1fr);gap:24px;align-items:start">
+          <div>
+            <img src="${escapeHTML(image)}"
+                 alt="${escapeHTML(product.name)}"
+                 onerror="this.src='nini-logo.jpeg'"
+                 style="width:100%;max-height:420px;object-fit:contain;border-radius:12px;background:#f7f8fb">
+          </div>
+          <div>
+            <div style="font-size:28px;font-weight:800;color:#111827">
+              ₹${price.toLocaleString("en-IN")}
+              ${mrp > price ? `
+                <del style="color:#68748b;font-size:16px;font-weight:500;margin-left:8px">
+                  ₹${mrp.toLocaleString("en-IN")}
+                </del>
+                <span style="color:#16a34a;font-size:15px;font-weight:700;margin-left:8px">
+                  ${discount}% OFF
+                </span>
+              ` : ""}
+            </div>
+
+            ${product.category ? `<div style="margin-top:10px;color:#68748b">Category: ${escapeHTML(product.category)}</div>` : ""}
+            ${product.age_group ? `<div style="margin-top:6px;color:#68748b">Age Group: ${escapeHTML(product.age_group)}</div>` : ""}
+            ${product.sku ? `<div style="margin-top:6px;color:#68748b">SKU: ${escapeHTML(product.sku)}</div>` : ""}
+
+            ${product.description ? `
+              <div style="margin-top:18px">
+                <strong>Description</strong>
+                <p style="color:#4b5563;line-height:1.6;margin-top:7px">${escapeHTML(product.description)}</p>
+              </div>
+            ` : ""}
+
+            <div style="margin-top:18px">
+              <strong>Available Sizes</strong>
+              <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:9px">
+                ${inStockSizes.length
+                  ? inStockSizes.map(s => `<span style="border:1px solid #d9deea;border-radius:7px;padding:7px 10px;background:#fff">${escapeHTML(s.size)} · ${Number(s.stock)} left</span>`).join("")
+                  : `<span style="color:#dc2626">Out of stock</span>`
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      modal.style.display = "flex";
+      document.body.style.overflow = "hidden";
+    }
+
+    function closeProductDetail(){
+      const modal = document.getElementById("productDetailModal");
+      if(!modal) return;
+      modal.style.display = "none";
+      document.body.style.overflow = "";
+    }
+
+    document.addEventListener("click", function(event){
+      const productCard = event.target.closest("#products .product");
+      if(!productCard) return;
+      if(event.target.closest("button, select, option, a")) return;
+
+      const sizeSelect = productCard.querySelector('select[id^="size-"]');
+      if(!sizeSelect) return;
+
+      const productId = sizeSelect.id.replace("size-", "");
+      openProductDetail(productId);
+    });
+
   </script>
 
   <script src="app.js"></script>
