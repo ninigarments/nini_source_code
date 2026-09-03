@@ -858,9 +858,21 @@ function renderCart() {
     cart.map((item, index) => {
 
 
-      const itemPrice = Number(item.price || 0);
+      const liveProduct = products.find(
+        p => Number(p.id) === Number(item.id)
+      );
 
-      const itemMrp = Number(item.mrp || item.price || 0);
+      const itemPrice = Number(
+        item.price || liveProduct?.price || 0
+      );
+
+      const itemMrp = Number(
+        item.mrp || liveProduct?.mrp || item.price || 0
+      );
+
+      const itemDiscount = Number(
+        item.discount || liveProduct?.discount || 0
+      );
 
       const itemQuantity = Number(item.quantity || 0);
 
@@ -868,7 +880,7 @@ function renderCart() {
 
       const itemSavings = Math.max(0, itemMrp - itemPrice) * itemQuantity;
 
-      const itemImage = item.image || "nini-logo.jpeg";
+      const itemImage = item.image || liveProduct?.image || "nini-logo.jpeg";
 
 
       return `
@@ -893,7 +905,7 @@ function renderCart() {
               ₹${itemPrice.toLocaleString("en-IN")}
               ${itemMrp > itemPrice ? `
                 <del style="color:#68748b;font-size:13px;font-weight:500;margin-left:6px">₹${itemMrp.toLocaleString("en-IN")}</del>
-                <span style="color:#16a34a;font-size:12px;font-weight:700;margin-left:6px">${Number(item.discount || 0)}% OFF</span>
+                <span style="color:#16a34a;font-size:12px;font-weight:700;margin-left:6px">${itemDiscount}% OFF</span>
               ` : ""}
             </div>
 
