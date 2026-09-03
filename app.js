@@ -661,6 +661,10 @@ function addToCart(productId) {
 
       price: Number(product.price),
 
+      mrp: Number(product.mrp || product.price || 0),
+
+      discount: Number(product.discount || 0),
+
       size: size,
 
       quantity: 1,
@@ -854,70 +858,53 @@ function renderCart() {
     cart.map((item, index) => {
 
 
-      const itemTotal =
+      const itemPrice = Number(item.price || 0);
 
-        Number(item.price) *
+      const itemMrp = Number(item.mrp || item.price || 0);
 
-        Number(item.quantity);
+      const itemQuantity = Number(item.quantity || 0);
+
+      const itemTotal = itemPrice * itemQuantity;
+
+      const itemSavings = Math.max(0, itemMrp - itemPrice) * itemQuantity;
+
+      const itemImage = item.image || "nini-logo.jpeg";
 
 
       return `
 
 
-        <div class="cart-line">
+        <div class="cart-line" style="display:grid;grid-template-columns:64px 1fr auto;gap:12px;align-items:center">
 
+          <img
+            src="${escapeHTML(itemImage)}"
+            alt="${escapeHTML(item.name)}"
+            onerror="this.src='nini-logo.jpeg'"
+            style="width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid #eee"
+          >
 
           <div>
 
+            <strong>${escapeHTML(item.name)}</strong>
 
-            <strong>
+            <div style="color:#68748b;margin-top:5px">Size: ${escapeHTML(item.size)}</div>
 
-              ${escapeHTML(item.name)}
-
-            </strong>
-
-
-            <div
-
-              style="color:#68748b;margin-top:5px"
-
-            >
-
-              Size:
-
-              ${escapeHTML(item.size)}
-
+            <div style="margin-top:5px;font-weight:700">
+              ₹${itemPrice.toLocaleString("en-IN")}
+              ${itemMrp > itemPrice ? `
+                <del style="color:#68748b;font-size:13px;font-weight:500;margin-left:6px">₹${itemMrp.toLocaleString("en-IN")}</del>
+                <span style="color:#16a34a;font-size:12px;font-weight:700;margin-left:6px">${Number(item.discount || 0)}% OFF</span>
+              ` : ""}
             </div>
 
-
-            <div
-
-              style="margin-top:5px"
-
-            >
-
-              ₹${Number(item.price)
-
-                .toLocaleString("en-IN")}
-
-              × ${item.quantity}
-
-            </div>
-
+            ${itemSavings > 0 ? `<div style="color:#16a34a;font-size:12px;margin-top:3px">You save ₹${itemSavings.toLocaleString("en-IN")}</div>` : ""}
 
           </div>
 
+          <div style="text-align:right">
+            <strong>₹${itemTotal.toLocaleString("en-IN")}</strong>
 
-          <strong>
-
-            ₹${itemTotal
-
-              .toLocaleString("en-IN")}
-
-          </strong>
-
-
-          <div
+            <div
 
             style="display:flex;gap:8px;align-items:center"
 
@@ -987,9 +974,24 @@ function renderCart() {
 
       sum +
 
-      Number(item.price) *
+      Number(item.price || 0) *
 
-      Number(item.quantity),
+      Number(item.quantity || 0),
+
+    0
+
+  );
+
+
+  const savings = cart.reduce(
+
+    (sum, item) =>
+
+      sum +
+
+      Math.max(0, Number(item.mrp || item.price || 0) - Number(item.price || 0)) *
+
+      Number(item.quantity || 0),
 
     0
 
@@ -1002,6 +1004,19 @@ function renderCart() {
 
       total.toLocaleString("en-IN");
 
+  }
+
+  const summary = totalElement ? totalElement.closest(".cart-summary") : null;
+
+  if (summary) {
+    let savingsElement = summary.querySelector(".cart-savings");
+    if (!savingsElement) {
+      savingsElement = document.createElement("div");
+      savingsElement.className = "cart-savings";
+      savingsElement.style.cssText = "color:#16a34a;font-size:13px;font-weight:700;margin-top:6px";
+      summary.appendChild(savingsElement);
+    }
+    savingsElement.textContent = savings > 0 ? `You save ₹${savings.toLocaleString("en-IN")}` : "";
   }
 
 }
