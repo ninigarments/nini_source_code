@@ -1115,31 +1115,31 @@ function ensureCheckoutModal() {
     if (event.target === modal) closeCheckout();
   };
   modal.innerHTML = `
-    <div class="cart-panel" style="max-width:520px;max-height:90vh;overflow:auto">
+    <div class="cart-panel" style="width:min(560px,calc(100vw - 32px));max-width:560px;max-height:90vh;overflow:auto">
       <div class="cart-header">
         <div><span class="section-kicker">CHECKOUT</span><h2>Delivery Details</h2></div>
         <button class="close-cart" type="button" onclick="closeCheckout()">×</button>
       </div>
-      <form id="checkoutForm" onsubmit="submitCheckout(event)" style="display:grid;gap:12px">
-        <label>Full Name *
-          <input id="checkoutName" required type="text" autocomplete="name" placeholder="Enter your full name">
+      <form id="checkoutForm" onsubmit="submitCheckout(event)" style="display:grid;gap:14px">
+        <label style="display:flex;flex-direction:column;gap:6px;font-weight:700">Full Name *
+          <input id="checkoutName" required type="text" autocomplete="name" placeholder="Enter your full name" style="width:100%;box-sizing:border-box;padding:11px 12px;border:1px solid #d7dce5;border-radius:7px;font:inherit;font-weight:400">
         </label>
-        <label>Mobile Number *
-          <input id="checkoutMobile" required type="tel" inputmode="numeric" maxlength="10" pattern="[6-9][0-9]{9}" autocomplete="tel" placeholder="10-digit mobile number">
+        <label style="display:flex;flex-direction:column;gap:6px;font-weight:700">Mobile Number *
+          <input id="checkoutMobile" required type="tel" inputmode="numeric" maxlength="10" pattern="[6-9][0-9]{9}" autocomplete="tel" placeholder="10-digit mobile number" style="width:100%;box-sizing:border-box;padding:11px 12px;border:1px solid #d7dce5;border-radius:7px;font:inherit;font-weight:400">
         </label>
-        <label>Full Address *
-          <textarea id="checkoutAddress" required rows="3" autocomplete="street-address" placeholder="House no., street, locality"></textarea>
+        <label style="display:flex;flex-direction:column;gap:6px;font-weight:700">Full Address *
+          <textarea id="checkoutAddress" required rows="3" autocomplete="street-address" placeholder="House no., street, locality" style="width:100%;box-sizing:border-box;padding:11px 12px;border:1px solid #d7dce5;border-radius:7px;font:inherit;font-weight:400;resize:vertical"></textarea>
         </label>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-          <label>City *
-            <input id="checkoutCity" required type="text" autocomplete="address-level2" placeholder="City">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <label style="display:flex;flex-direction:column;gap:6px;font-weight:700">City *
+            <input id="checkoutCity" required type="text" autocomplete="address-level2" placeholder="City" style="width:100%;box-sizing:border-box;padding:11px 12px;border:1px solid #d7dce5;border-radius:7px;font:inherit;font-weight:400">
           </label>
-          <label>State *
-            <input id="checkoutState" required type="text" autocomplete="address-level1" placeholder="State">
+          <label style="display:flex;flex-direction:column;gap:6px;font-weight:700">State *
+            <input id="checkoutState" required type="text" autocomplete="address-level1" placeholder="State" style="width:100%;box-sizing:border-box;padding:11px 12px;border:1px solid #d7dce5;border-radius:7px;font:inherit;font-weight:400">
           </label>
         </div>
-        <label>PIN Code *
-          <input id="checkoutPin" required type="text" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" autocomplete="postal-code" placeholder="6-digit PIN code">
+        <label style="display:flex;flex-direction:column;gap:6px;font-weight:700">PIN Code *
+          <input id="checkoutPin" required type="text" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" autocomplete="postal-code" placeholder="6-digit PIN code" style="width:100%;box-sizing:border-box;padding:11px 12px;border:1px solid #d7dce5;border-radius:7px;font:inherit;font-weight:400">
         </label>
         <div style="background:#f7f8fa;border-radius:10px;padding:14px">
           <strong>Order Summary</strong>
@@ -1150,6 +1150,9 @@ function ensureCheckoutModal() {
     </div>
   `;
   document.body.appendChild(modal);
+  const style = document.createElement("style");
+  style.textContent = `@media (max-width:600px){#checkoutForm > div[style*="grid-template-columns"]{grid-template-columns:1fr !important}}`;
+  document.head.appendChild(style);
 }
 
 function renderCheckout() {
