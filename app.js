@@ -204,6 +204,19 @@ function renderProducts(list) {
 
             ₹${Number(product.price || 0).toLocaleString("en-IN")}
 
+            ${
+              Number(product.mrp || 0) > Number(product.price || 0)
+                ? `
+                  <del style="margin-left:8px;color:#68748b;font-size:0.9em;">
+                    ₹${Number(product.mrp).toLocaleString("en-IN")}
+                  </del>
+                  <span style="margin-left:8px;font-size:0.85em;">
+                    ${Number(product.discount || 0)}% OFF
+                  </span>
+                `
+                : ""
+            }
+
           </div>
 
 
