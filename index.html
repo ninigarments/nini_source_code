@@ -398,19 +398,38 @@
 
             <div style="margin-top:18px">
               <strong>Available Sizes</strong>
-              <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:9px">
-                ${inStockSizes.length
-                  ? inStockSizes.map(s => `<span style="border:1px solid #d9deea;border-radius:7px;padding:7px 10px;background:#fff">${escapeHTML(s.size)} · ${Number(s.stock)} left</span>`).join("")
-                  : `<span style="color:#dc2626">Out of stock</span>`
-                }
-              </div>
+              <select id="detail-size-${product.id}" style="width:100%;margin-top:9px;padding:10px;border:1px solid #d9deea;border-radius:7px;background:#fff;font-size:15px" ${inStockSizes.length ? "" : "disabled"}>
+                <option value="">Select Size</option>
+                ${inStockSizes.map(s => `<option value="${escapeHTML(s.size)}">${escapeHTML(s.size)} · ${Number(s.stock)} left</option>`).join("")}
+              </select>
             </div>
+
+            <button type="button" class="market-btn primary" style="width:100%;margin-top:16px" onclick="addDetailProductToCart(${product.id})" ${inStockSizes.length ? "" : "disabled"}>
+              ${inStockSizes.length ? "Add to Cart 🛒" : "Out of Stock"}
+            </button>
           </div>
         </div>
       `;
 
       modal.style.display = "flex";
       document.body.style.overflow = "hidden";
+    }
+
+    function addDetailProductToCart(productId){
+      const detailSelect = document.getElementById(`detail-size-${productId}`);
+      const cardSelect = document.getElementById(`size-${productId}`);
+
+      if(!detailSelect || !cardSelect) return;
+
+      if(!detailSelect.value){
+        alert("Please select a size first.");
+        detailSelect.focus();
+        return;
+      }
+
+      cardSelect.value = detailSelect.value;
+      addToCart(productId);
+      closeProductDetail();
     }
 
     function closeProductDetail(){
