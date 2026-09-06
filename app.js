@@ -1168,21 +1168,101 @@ function renderCheckout() {
   }
 }
 
-function submitCheckout(event) {
+async function submitCheckout(event) {
   event.preventDefault();
+
   const form = document.getElementById("checkoutForm");
   if (!form || !form.reportValidity()) return;
+
+  if (!cart.length) {
+    alert("Your cart is empty.");
+    closeCheckout();
+    return;
+  }
+
+  const user = JSON.parse(localStorage.getItem("nini_user") || "null");
+  if (!user || !user.id) {
+    alert("Please login before placing your order.");
+    closeCheckout();
+    if (typeof openAccount === "function") openAccount();
+    return;
+  }
+
   const mobile = document.getElementById("checkoutMobile").value.trim();
   const pin = document.getElementById("checkoutPin").value.trim();
+  const fullName = document.getElementById("checkoutName").value.trim();
+  const address = document.getElementById("checkoutAddress").value.trim();
+  const city = document.getElementById("checkoutCity").value.trim();
+  const state = document.getElementById("checkoutState").value.trim();
+
   if (!/^[6-9]\d{9}$/.test(mobile)) {
     alert("Please enter a valid 10-digit mobile number.");
     return;
   }
+
   if (!/^\d{6}$/.test(pin)) {
     alert("Please enter a valid 6-digit PIN code.");
     return;
   }
-  alert("Your details are valid. Backend order submission will be connected in the next step.");
+
+  const total = cart.reduce(
+    (sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0),
+    0
+  );
+
+  const items = cart.map(item => ({
+    product_id: Number(item.id),
+    size: String(item.size || "").trim(),
+    quantity: Number(item.quantity || 0),
+    price: Number(item.price || 0)
+  }));
+
+  const submitButton = form.querySelector('button[type="submit"]');
+  if (submitButton) {
+    submitButton.disabled = true;
+    submitButton.textContent = "Placing Order...";
+  }
+
+  try {
+    const response = await fetch(`${API_URL}/api/orders`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        user_id: Number(user.id),
+        full_name: fullName,
+        mobile,
+        address,
+        city,
+        state,
+        pin_code: pin,
+        total_amount: total,
+        items
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      alert(data.error || "Unable to place order. Please try again.");
+      return;
+    }
+
+    cart = [];
+    saveCart();
+    updateCartCount();
+    closeCheckout();
+    closeCart();
+
+    alert(`Order placed successfully!\n\nOrder ID: #${data.order_id}`);
+  } catch (error) {
+    console.error("Nini order submission error:", error);
+    alert("Unable to connect to the server. Please try again.");
+  } finally {
+    if (submitButton) {
+      submitButton.disabled = false;
+      submitButton.textContent = "Confirm Order →";
+    }
+  }
 }
 
 /* ---------- PLACE ORDER (legacy entry point) ---------- */
