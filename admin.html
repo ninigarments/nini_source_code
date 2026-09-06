@@ -1131,6 +1131,64 @@ async function loadOrders(){
   }
 }
 
+async function updateOrderStatus(orderId, status, button){
+
+  if (!orderId || !status) return;
+
+  const originalText = button ? button.textContent : "Update";
+  if (button) {
+    button.disabled = true;
+    button.textContent = "Updating...";
+  }
+
+  try {
+
+    const response = await fetch(
+      API_URL + "/api/admin/orders/status",
+      {
+        method:"POST",
+        headers:{
+          "Content-Type":"application/json"
+        },
+        body:JSON.stringify({
+          email:adminEmail,
+          password:adminPassword,
+          order_id:Number(orderId),
+          status:String(status).toLowerCase()
+        })
+      }
+    );
+
+    const data = await response.json();
+
+    if(!response.ok || !data.success){
+      throw new Error(data.error || "Could not update order status");
+    }
+
+    showMessage(
+      "ordersMessage",
+      "Order #" + Number(orderId) + " status updated successfully.",
+      "success"
+    );
+
+    await loadOrders();
+
+  } catch(error) {
+
+    showMessage(
+      "ordersMessage",
+      error.message,
+      "error"
+    );
+
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.textContent = originalText;
+    }
+  }
+}
+
 function renderOrders(orders){
 
   $("orderCount").textContent =
@@ -1181,7 +1239,12 @@ function renderOrders(orders){
             <div class="order-id">Order #${Number(order.id)}</div>
             <div class="meta">${escapeHtml(created)}</div>
           </div>
-          <span class="order-status">${escapeHtml(order.status || "pending")}</span>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <select class="order-status-select" data-order-id="${Number(order.id)}" style="padding:7px 10px;border:1px solid #ccd2df;border-radius:8px;font-weight:700;text-transform:capitalize">
+              ${["pending","confirmed","shipped","delivered","cancelled"].map(status=>`<option value="${status}" ${String(order.status || "pending").toLowerCase() === status ? "selected" : ""}>${status}</option>`).join("")}
+            </select>
+            <button class="btn primary update-order-status" data-order-id="${Number(order.id)}" style="padding:7px 12px">Update</button>
+          </div>
         </div>
 
         <div class="order-info">
@@ -1218,6 +1281,17 @@ $("loginPassword").addEventListener("keydown",e=>{
 
 $("ordersBtn").addEventListener("click",()=>{
   showOrders();
+});
+
+$("orders").addEventListener("click",(event)=>{
+  const button = event.target.closest(".update-order-status");
+  if(!button) return;
+
+  const orderId = button.dataset.orderId;
+  const select = document.querySelector(`.order-status-select[data-order-id="${orderId}"]`);
+  if(!select) return;
+
+  updateOrderStatus(orderId, select.value, button);
 });
 
 $("refreshOrdersBtn").addEventListener("click",loadOrders);
