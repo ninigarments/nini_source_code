@@ -212,6 +212,63 @@ h1,h2,h3{margin-top:0}
   color:#b51e46;
 }
 
+.order-card{
+  border:1px solid #e4e8f0;
+  border-radius:14px;
+  padding:18px;
+  margin-bottom:14px;
+  background:#fff;
+}
+.order-top{
+  display:flex;
+  justify-content:space-between;
+  gap:15px;
+  align-items:flex-start;
+  margin-bottom:12px;
+}
+.order-id{font-size:19px;font-weight:800}
+.order-status{
+  display:inline-block;
+  padding:5px 10px;
+  border-radius:20px;
+  background:#fff4d6;
+  color:#8a6200;
+  font-size:12px;
+  font-weight:800;
+  text-transform:capitalize;
+}
+.order-info{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px 18px;
+  padding:12px;
+  background:#f7f8fb;
+  border-radius:10px;
+  margin-bottom:12px;
+}
+.order-items{
+  border-top:1px solid #e4e8f0;
+  padding-top:12px;
+}
+.order-item{
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  padding:7px 0;
+}
+.order-total{
+  display:flex;
+  justify-content:space-between;
+  border-top:1px solid #dfe3eb;
+  margin-top:8px;
+  padding-top:10px;
+  font-size:17px;
+  font-weight:800;
+}
+@media(max-width:650px){
+  .order-info{grid-template-columns:1fr}
+  .order-top{flex-direction:column}
+}
 @media(max-width:650px){
   .top{padding:14px}
   .container{margin:20px auto;padding:0 12px}
@@ -265,14 +322,38 @@ h1,h2,h3{margin-top:0}
       <div id="productCount" class="meta"></div>
     </div>
 
-    <button id="addBtn" class="btn primary">
-      + Add Product
-    </button>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button id="ordersBtn" class="btn secondary">
+        📦 Orders
+      </button>
+      <button id="addBtn" class="btn primary">
+        + Add Product
+      </button>
+    </div>
   </div>
 
   <div id="dashboardMessage" class="message"></div>
 
   <div id="products" class="products"></div>
+</div>
+
+<!-- ORDERS -->
+<div id="ordersScreen" class="container hidden">
+  <div class="card">
+    <div class="toolbar">
+      <div>
+        <h2 style="margin-bottom:6px">Orders</h2>
+        <div id="orderCount" class="meta"></div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button id="refreshOrdersBtn" class="btn secondary">↻ Refresh</button>
+        <button id="backFromOrdersBtn" class="btn secondary">← Products</button>
+      </div>
+    </div>
+
+    <div id="ordersMessage" class="message"></div>
+    <div id="orders"></div>
+  </div>
 </div>
 
 <!-- PRODUCT FORM -->
@@ -418,13 +499,22 @@ function hideMessage(id){
 function showDashboard(){
   $("loginScreen").classList.add("hidden");
   $("formScreen").classList.add("hidden");
+  $("ordersScreen").classList.add("hidden");
   $("dashboard").classList.remove("hidden");
   $("logoutBtn").classList.remove("hidden");
 }
 
 function showForm(){
   $("dashboard").classList.add("hidden");
+  $("ordersScreen").classList.add("hidden");
   $("formScreen").classList.remove("hidden");
+}
+
+function showOrders(){
+  $("dashboard").classList.add("hidden");
+  $("formScreen").classList.add("hidden");
+  $("ordersScreen").classList.remove("hidden");
+  loadOrders();
 }
 
 function resetForm(){
@@ -1002,10 +1092,138 @@ async function deactivateProduct(id){
   }
 }
 
+async function loadOrders(){
+
+  showMessage("ordersMessage","Loading orders...","success");
+
+  try{
+
+    const response = await fetch(
+      API_URL + "/api/admin/orders",
+      {
+        method:"POST",
+        headers:{
+          "Content-Type":"application/json"
+        },
+        body:JSON.stringify({
+          email:adminEmail,
+          password:adminPassword
+        })
+      }
+    );
+
+    const data = await response.json();
+
+    if(!response.ok || !data.success){
+      throw new Error(data.error || "Could not load orders");
+    }
+
+    renderOrders(data.orders || []);
+    hideMessage("ordersMessage");
+
+  }catch(error){
+
+    showMessage(
+      "ordersMessage",
+      error.message,
+      "error"
+    );
+  }
+}
+
+function renderOrders(orders){
+
+  $("orderCount").textContent =
+    orders.length + " order(s)";
+
+  if(!orders.length){
+
+    $("orders").innerHTML = `
+      <div class="card" style="box-shadow:none;border:1px solid #e4e8f0">
+        <h3>No orders yet</h3>
+        <p class="meta">Customer orders will appear here after successful checkout.</p>
+      </div>
+    `;
+
+    return;
+  }
+
+  $("orders").innerHTML = orders.map(order=>{
+
+    const items = Array.isArray(order.items)
+      ? order.items
+      : [];
+
+    const created = order.created_at
+      ? new Date(order.created_at).toLocaleString("en-IN")
+      : "—";
+
+    const itemHtml = items.length
+      ? items.map(item=>`
+          <div class="order-item">
+            <span>
+              <strong>${escapeHtml(item.product_name || item.name || "Product")}</strong>
+              <span class="meta">
+                × ${Number(item.quantity || 0)}
+                ${item.size ? " • Size: " + escapeHtml(item.size) : ""}
+              </span>
+            </span>
+            <strong>₹${(Number(item.price || 0) * Number(item.quantity || 0)).toLocaleString("en-IN")}</strong>
+          </div>
+        `).join("")
+      : `<div class="meta">No item details found.</div>`;
+
+    return `
+      <div class="order-card">
+
+        <div class="order-top">
+          <div>
+            <div class="order-id">Order #${Number(order.id)}</div>
+            <div class="meta">${escapeHtml(created)}</div>
+          </div>
+          <span class="order-status">${escapeHtml(order.status || "pending")}</span>
+        </div>
+
+        <div class="order-info">
+          <div><strong>Customer:</strong> ${escapeHtml(order.full_name || order.customer_name || "—")}</div>
+          <div><strong>Mobile:</strong> ${escapeHtml(order.mobile || "—")}</div>
+          <div><strong>Email:</strong> ${escapeHtml(order.customer_email || "—")}</div>
+          <div><strong>City:</strong> ${escapeHtml(order.city || "—")}</div>
+          <div><strong>State:</strong> ${escapeHtml(order.state || "—")}</div>
+          <div><strong>PIN:</strong> ${escapeHtml(order.pin_code || "—")}</div>
+          <div style="grid-column:1/-1"><strong>Address:</strong> ${escapeHtml(order.address || "—")}</div>
+        </div>
+
+        <div class="order-items">
+          <strong>Items</strong>
+          ${itemHtml}
+
+          <div class="order-total">
+            <span>Total</span>
+            <span>₹${Number(order.total_amount || 0).toLocaleString("en-IN")}</span>
+          </div>
+        </div>
+
+      </div>
+    `;
+
+  }).join("");
+}
+
 $("loginBtn").addEventListener("click",login);
 
 $("loginPassword").addEventListener("keydown",e=>{
   if(e.key === "Enter") login();
+});
+
+$("ordersBtn").addEventListener("click",()=>{
+  showOrders();
+});
+
+$("refreshOrdersBtn").addEventListener("click",loadOrders);
+
+$("backFromOrdersBtn").addEventListener("click",()=>{
+  showDashboard();
 });
 
 $("addBtn").addEventListener("click",()=>{
@@ -1031,6 +1249,7 @@ $("logoutBtn").addEventListener("click",()=>{
   $("logoutBtn").classList.add("hidden");
   $("dashboard").classList.add("hidden");
   $("formScreen").classList.add("hidden");
+  $("ordersScreen").classList.add("hidden");
   $("loginScreen").classList.remove("hidden");
 
   $("loginPassword").value = "";
