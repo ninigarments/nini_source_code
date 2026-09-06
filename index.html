@@ -13,6 +13,15 @@
     #productDetailContent > .nini-product-detail-grid > div {
       min-width: 0;
     }
+    .nini-account-tabs{display:flex;gap:8px;margin:18px 0 14px}
+    .nini-account-tabs button{flex:1;padding:11px;border:1px solid #d9deea;background:#fff;border-radius:8px;font-weight:700;cursor:pointer}
+    .nini-account-tabs button.active{background:#1f66e8;color:#fff;border-color:#1f66e8}
+    .nini-account-form{display:flex;flex-direction:column;gap:10px}
+    .nini-account-form label{font-weight:700;font-size:14px}
+    .nini-account-form input{width:100%;box-sizing:border-box;padding:12px;border:1px solid #d9deea;border-radius:8px;font-size:15px}
+    .nini-account-form .market-btn{width:100%;margin-top:6px}
+    .nini-account-note{font-size:13px;color:#68748b;margin-top:8px;line-height:1.45}
+    .nini-account-user{padding:14px;background:#f7f8fb;border-radius:10px;margin-top:16px}
     @media (max-width: 700px) {
       #productDetailModal {
         padding: 10px !important;
@@ -69,7 +78,7 @@
       </div>
 
       <nav class="desktop-actions">
-        <a class="header-action" href="#shop"><span>♙</span><small>Account</small></a>
+        <a class="header-action" href="javascript:void(0)" onclick="openAccount()"><span>♙</span><small id="accountLabel">Account</small></a>
         <a class="header-action" href="#orders"><span>▣</span><small>Orders</small></a>
         <button class="header-action cart-action" onclick="openCart()">
           <span>🛒<b id="cartCount">0</b></span><small>Cart</small>
@@ -298,6 +307,17 @@
   </main>
 
 
+  <div id="accountModal" class="cart-modal" style="align-items:center;justify-content:center;padding:16px;box-sizing:border-box"
+       onclick="if(event.target === this) closeAccount()">
+    <div class="cart-panel" style="width:min(430px,100%);max-width:430px;max-height:90vh;overflow:auto;box-sizing:border-box">
+      <div class="cart-header">
+        <div><span class="section-kicker">NINI ACCOUNT</span><h2 id="accountTitle">Login</h2></div>
+        <button class="close-cart" onclick="closeAccount()">×</button>
+      </div>
+      <div id="accountContent"></div>
+    </div>
+  </div>
+
   <div id="productDetailModal" class="cart-modal" style="align-items:center;justify-content:center;padding:16px;box-sizing:border-box"
        onclick="if(event.target === this) closeProductDetail()">
     <div class="cart-panel" style="width:min(720px,100%);max-width:720px;max-height:90vh;overflow-x:hidden;overflow-y:auto;box-sizing:border-box">
@@ -320,6 +340,152 @@
       <button class="market-btn primary cart-checkout" onclick="placeOrder()">Place Order →</button>
     </div>
   </div>
+
+  <script>
+    const NINI_API_URL = "https://nini-api.msninigarments7368.workers.dev";
+
+    function getNiniUser(){
+      try { return JSON.parse(localStorage.getItem("nini_user") || "null"); }
+      catch(e){ return null; }
+    }
+
+    function updateAccountLabel(){
+      const label = document.getElementById("accountLabel");
+      const user = getNiniUser();
+      if(label) label.textContent = user ? (user.name || "Account") : "Account";
+    }
+
+    function openAccount(){
+      const modal = document.getElementById("accountModal");
+      const content = document.getElementById("accountContent");
+      if(!modal || !content) return;
+      const user = getNiniUser();
+
+      if(user){
+        document.getElementById("accountTitle").textContent = "My Account";
+        content.innerHTML = `
+          <div class="nini-account-user">
+            <strong>${escapeHTML(user.name || "")}</strong>
+            <div style="color:#68748b;margin-top:5px">${escapeHTML(user.email || "")}</div>
+          </div>
+          <button type="button" class="market-btn primary" style="width:100%;margin-top:16px" onclick="logoutNini()">Logout</button>
+        `;
+      }else{
+        showLoginForm();
+      }
+
+      modal.style.display = "flex";
+      document.body.style.overflow = "hidden";
+    }
+
+    function showLoginForm(){
+      document.getElementById("accountTitle").textContent = "Login";
+      document.getElementById("accountContent").innerHTML = `
+        <div class="nini-account-tabs">
+          <button class="active" type="button" onclick="showLoginForm()">Login</button>
+          <button type="button" onclick="showSignupForm()">Sign Up</button>
+        </div>
+        <form class="nini-account-form" onsubmit="loginNini(event)">
+          <label>Email</label>
+          <input id="loginEmail" type="email" required autocomplete="email" placeholder="Enter your email">
+          <label>Password</label>
+          <input id="loginPassword" type="password" required autocomplete="current-password" placeholder="Enter your password">
+          <button class="market-btn primary" type="submit">Login →</button>
+        </form>
+        <div class="nini-account-note">New customer? Choose <strong>Sign Up</strong> to create your account.</div>
+      `;
+    }
+
+    function showSignupForm(){
+      document.getElementById("accountTitle").textContent = "Create Account";
+      document.getElementById("accountContent").innerHTML = `
+        <div class="nini-account-tabs">
+          <button type="button" onclick="showLoginForm()">Login</button>
+          <button class="active" type="button" onclick="showSignupForm()">Sign Up</button>
+        </div>
+        <form class="nini-account-form" onsubmit="signupNini(event)">
+          <label>Full Name</label>
+          <input id="signupName" type="text" required autocomplete="name" placeholder="Enter your full name">
+          <label>Email</label>
+          <input id="signupEmail" type="email" required autocomplete="email" placeholder="Enter your email">
+          <label>Password</label>
+          <input id="signupPassword" type="password" required minlength="6" autocomplete="new-password" placeholder="Minimum 6 characters">
+          <button class="market-btn primary" type="submit">Create Account →</button>
+        </form>
+      `;
+    }
+
+    async function loginNini(event){
+      event.preventDefault();
+      const email = document.getElementById("loginEmail").value.trim().toLowerCase();
+      const password = document.getElementById("loginPassword").value;
+
+      try{
+        const response = await fetch(NINI_API_URL + "/api/login", {
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({email,password})
+        });
+        const data = await response.json();
+        if(!response.ok || !data.success){
+          alert(data.error || "Login failed");
+          return;
+        }
+        localStorage.setItem("nini_user", JSON.stringify(data.user));
+        updateAccountLabel();
+        alert("Login successful!");
+        closeAccount();
+      }catch(error){
+        alert("Unable to connect. Please try again.");
+      }
+    }
+
+    async function signupNini(event){
+      event.preventDefault();
+      const name = document.getElementById("signupName").value.trim();
+      const email = document.getElementById("signupEmail").value.trim().toLowerCase();
+      const password = document.getElementById("signupPassword").value;
+
+      if(password.length < 6){
+        alert("Password must be at least 6 characters.");
+        return;
+      }
+
+      try{
+        const response = await fetch(NINI_API_URL + "/api/register", {
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({name,email,password})
+        });
+        const data = await response.json();
+        if(!response.ok || !data.success){
+          alert(data.error || "Signup failed");
+          return;
+        }
+        alert("Account created successfully! Please login.");
+        showLoginForm();
+        document.getElementById("loginEmail").value = email;
+      }catch(error){
+        alert("Unable to connect. Please try again.");
+      }
+    }
+
+    function logoutNini(){
+      localStorage.removeItem("nini_user");
+      updateAccountLabel();
+      closeAccount();
+      alert("Logged out successfully.");
+    }
+
+    function closeAccount(){
+      const modal = document.getElementById("accountModal");
+      if(!modal) return;
+      modal.style.display = "none";
+      document.body.style.overflow = "";
+    }
+
+    updateAccountLabel();
+  </script>
 
   <script>
     function toggleMobileMenu(){
