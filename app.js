@@ -1267,6 +1267,623 @@ async function submitCheckout(event) {
 
 /* ---------- PLACE ORDER (legacy entry point) ---------- */
 
+/* ---------- MY ORDERS / ORDER TRACKING ---------- */
+
+function getCurrentNiniUser() {
+  try {
+    return JSON.parse(localStorage.getItem("nini_user") || "null");
+  } catch (error) {
+    return null;
+  }
+}
+
+
+function ensureMyOrdersModal() {
+
+  if (document.getElementById("myOrdersModal")) {
+    return;
+  }
+
+  const modal = document.createElement("div");
+
+  modal.id = "myOrdersModal";
+
+  modal.style.cssText = `
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.55);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:99999;
+    padding:20px;
+  `;
+
+  modal.innerHTML = `
+
+    <div style="
+      background:#fff;
+      width:min(900px,100%);
+      max-height:90vh;
+      overflow:auto;
+      border-radius:14px;
+      padding:22px;
+      position:relative;
+      box-shadow:0 15px 50px rgba(0,0,0,.25);
+    ">
+
+      <button
+        onclick="closeMyOrders()"
+        style="
+          position:absolute;
+          right:15px;
+          top:12px;
+          border:0;
+          background:transparent;
+          font-size:25px;
+          cursor:pointer;
+        "
+      >
+        ×
+      </button>
+
+      <h2 style="margin:0 0 5px;">
+        My Orders
+      </h2>
+
+      <p style="margin:0 0 18px;color:#68748b;">
+        Track your Nini Garments orders
+      </p>
+
+      <div id="myOrdersContent">
+
+        <div style="padding:30px;text-align:center;">
+          Loading orders...
+        </div>
+
+      </div>
+
+    </div>
+
+  `;
+
+  document.body.appendChild(modal);
+}
+
+
+function openMyOrders() {
+
+  const user = getCurrentNiniUser();
+
+  if (!user || !user.id) {
+
+    alert("Please login to view your orders.");
+
+    return;
+
+  }
+
+  ensureMyOrdersModal();
+
+  const modal =
+    document.getElementById("myOrdersModal");
+
+  modal.style.display = "flex";
+
+  document.body.style.overflow = "hidden";
+
+  loadMyOrders();
+
+}
+
+
+function closeMyOrders() {
+
+  const modal =
+    document.getElementById("myOrdersModal");
+
+  if (modal) {
+
+    modal.style.display = "none";
+
+  }
+
+  document.body.style.overflow = "";
+
+}
+
+
+async function loadMyOrders() {
+
+  const content =
+    document.getElementById("myOrdersContent");
+
+  if (!content) return;
+
+
+  const user = getCurrentNiniUser();
+
+
+  if (!user || !user.id) {
+
+    content.innerHTML = `
+      <div style="padding:25px;text-align:center;">
+        Please login to view your orders.
+      </div>
+    `;
+
+    return;
+
+  }
+
+
+  content.innerHTML = `
+    <div style="padding:25px;text-align:center;">
+      Loading your orders...
+    </div>
+  `;
+
+
+  try {
+
+    const response = await fetch(
+      `${API_URL}/api/orders/user/${encodeURIComponent(Number(user.id))}`,
+      {
+        method: "GET"
+      }
+    );
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        "Unable to load orders"
+      );
+
+    }
+
+
+    const data = await response.json();
+
+
+    const orders =
+      Array.isArray(data.orders)
+        ? data.orders
+        : [];
+
+
+    if (!orders.length) {
+
+      content.innerHTML = `
+
+        <div style="
+          padding:40px 20px;
+          text-align:center;
+          color:#68748b;
+        ">
+
+          <div style="font-size:42px;">
+            📦
+          </div>
+
+          <h3 style="color:#111;">
+            No orders yet
+          </h3>
+
+          <p>
+            Your placed orders will appear here.
+          </p>
+
+        </div>
+
+      `;
+
+      return;
+
+    }
+
+
+    content.innerHTML = orders.map(order => {
+
+      const status =
+        String(order.status || "pending")
+          .toLowerCase();
+
+
+      const date =
+        order.created_at
+          ? new Date(order.created_at)
+              .toLocaleString("en-IN")
+          : "";
+
+
+      const items =
+        Array.isArray(order.items)
+          ? order.items
+          : [];
+
+
+      const trackingSteps = [
+        "pending",
+        "confirmed",
+        "shipped",
+        "delivered"
+      ];
+
+
+      const currentIndex =
+        trackingSteps.indexOf(status);
+
+
+      let trackingHTML = "";
+
+
+      if (status === "cancelled") {
+
+        trackingHTML = `
+
+          <div style="
+            margin-top:18px;
+            padding:12px;
+            background:#fff1f2;
+            color:#be123c;
+            border-radius:8px;
+            font-weight:700;
+          ">
+
+            ❌ Order Cancelled
+
+          </div>
+
+        `;
+
+      } else {
+
+        trackingHTML = `
+
+          <div style="
+            display:flex;
+            justify-content:space-between;
+            gap:5px;
+            margin-top:20px;
+            position:relative;
+          ">
+
+            ${trackingSteps.map(
+              (step, index) => {
+
+                const active =
+                  index <= currentIndex;
+
+                const label =
+                  step.charAt(0).toUpperCase() +
+                  step.slice(1);
+
+                return `
+
+                  <div style="
+                    flex:1;
+                    text-align:center;
+                    position:relative;
+                  ">
+
+                    <div style="
+                      width:30px;
+                      height:30px;
+                      border-radius:50%;
+                      margin:0 auto 6px;
+                      display:flex;
+                      align-items:center;
+                      justify-content:center;
+                      background:${active ? "#111" : "#ddd"};
+                      color:${active ? "#fff" : "#777"};
+                      font-size:13px;
+                      font-weight:700;
+                    ">
+
+                      ${index + 1}
+
+                    </div>
+
+                    <div style="
+                      font-size:12px;
+                      font-weight:${active ? "700" : "500"};
+                      color:${active ? "#111" : "#888"};
+                    ">
+
+                      ${label}
+
+                    </div>
+
+                  </div>
+
+                `;
+
+              }
+            ).join("")}
+
+          </div>
+
+        `;
+
+      }
+
+
+      return `
+
+        <div style="
+          border:1px solid #e5e7eb;
+          border-radius:12px;
+          padding:18px;
+          margin-bottom:16px;
+          background:#fff;
+        ">
+
+          <div style="
+            display:flex;
+            justify-content:space-between;
+            gap:10px;
+            flex-wrap:wrap;
+          ">
+
+            <div>
+
+              <strong>
+                Order #${escapeHTML(String(order.id))}
+              </strong>
+
+              <div style="
+                color:#68748b;
+                font-size:13px;
+                margin-top:4px;
+              ">
+
+                ${escapeHTML(date)}
+
+              </div>
+
+            </div>
+
+
+            <div style="
+              font-weight:800;
+              font-size:18px;
+            ">
+
+              ₹${Number(
+                order.total_amount || 0
+              ).toLocaleString("en-IN")}
+
+            </div>
+
+          </div>
+
+
+          <div style="
+            margin-top:15px;
+          ">
+
+            ${
+              items.length
+
+                ? items.map(item => `
+
+                    <div style="
+                      padding:10px 0;
+                      border-bottom:1px solid #f0f0f0;
+                    ">
+
+                      <strong>
+                        ${escapeHTML(
+                          item.name || "Product"
+                        )}
+                      </strong>
+
+                      <div style="
+                        color:#68748b;
+                        font-size:13px;
+                        margin-top:3px;
+                      ">
+
+                        Size:
+                        ${escapeHTML(
+                          item.size || "-"
+                        )}
+
+                        &nbsp; • &nbsp;
+
+                        Qty:
+                        ${Number(
+                          item.quantity || 0
+                        )}
+
+                        &nbsp; • &nbsp;
+
+                        ₹${Number(
+                          item.price || 0
+                        ).toLocaleString("en-IN")}
+
+                      </div>
+
+                    </div>
+
+                  `).join("")
+
+                : `
+                    <div style="
+                      color:#68748b;
+                    ">
+                      Order items unavailable.
+                    </div>
+                  `
+            }
+
+          </div>
+
+
+          <div style="
+            margin-top:15px;
+            display:inline-block;
+            padding:6px 12px;
+            border-radius:20px;
+            background:#f3f4f6;
+            font-size:13px;
+            font-weight:700;
+            text-transform:capitalize;
+          ">
+
+            ${escapeHTML(status)}
+
+          </div>
+
+
+          ${trackingHTML}
+
+        </div>
+
+      `;
+
+    }).join("");
+
+
+  } catch (error) {
+
+    console.error(
+      "My Orders error:",
+      error
+    );
+
+
+    content.innerHTML = `
+
+      <div style="
+        padding:30px;
+        text-align:center;
+      ">
+
+        <strong>
+          Unable to load your orders.
+        </strong>
+
+        <br><br>
+
+        Please refresh and try again.
+
+      </div>
+
+    `;
+
+  }
+
+}
+
+
+/* ---------- MY ORDERS BUTTON / HEADER LINK ---------- */
+
+document.addEventListener(
+  "click",
+  function(event) {
+
+    const ordersLink =
+      event.target.closest(
+        'a[href="#orders"], [data-orders-link]'
+      );
+
+
+    if (ordersLink) {
+
+      event.preventDefault();
+
+      openMyOrders();
+
+    }
+
+  }
+);
+
+
+/* ---------- ADD MY ORDERS TO ACCOUNT MODAL ---------- */
+
+document.addEventListener(
+  "DOMContentLoaded",
+  function() {
+
+    const accountModal =
+      document.getElementById(
+        "accountModal"
+      );
+
+
+    if (!accountModal) return;
+
+
+    if (
+      accountModal.querySelector(
+        ".nini-my-orders-btn"
+      )
+    ) {
+      return;
+    }
+
+
+    const button =
+      document.createElement("button");
+
+
+    button.className =
+      "nini-my-orders-btn";
+
+
+    button.type = "button";
+
+
+    button.textContent =
+      "📦 My Orders";
+
+
+    button.style.cssText = `
+      width:100%;
+      margin-top:10px;
+      padding:11px 14px;
+      border:1px solid #ddd;
+      border-radius:8px;
+      background:#fff;
+      cursor:pointer;
+      font-weight:700;
+    `;
+
+
+    button.onclick =
+      function() {
+
+        openMyOrders();
+
+      };
+
+
+    const logoutButton =
+      accountModal.querySelector(
+        'button[onclick*="logout"], #logoutBtn'
+      );
+
+
+    if (logoutButton) {
+
+      logoutButton.parentNode.insertBefore(
+        button,
+        logoutButton
+      );
+
+    } else {
+
+      accountModal.appendChild(
+        button
+      );
+
+    }
+
+  }
+);
 /* ---------- ESCAPE HTML ---------- */
 
 function escapeHTML(value) {
