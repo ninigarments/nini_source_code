@@ -269,6 +269,58 @@ h1,h2,h3{margin-top:0}
   .order-info{grid-template-columns:1fr}
   .order-top{flex-direction:column}
 }
+
+.bulk-orders-bar{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  flex-wrap:wrap;
+  padding:12px;
+  margin-bottom:16px;
+  border:1px solid #e4e8f0;
+  border-radius:12px;
+  background:#f8faff;
+}
+.bulk-left,.bulk-right{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.bulk-check-label{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  font-weight:700;
+}
+.bulk-check-label input{
+  width:18px;
+  height:18px;
+}
+.bulk-status-select{
+  padding:10px 12px;
+  border:1px solid #ccd2df;
+  border-radius:9px;
+  background:#fff;
+  font-weight:700;
+}
+.order-select{
+  width:18px;
+  height:18px;
+  cursor:pointer;
+}
+.order-select-wrap{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+@media(max-width:650px){
+  .bulk-orders-bar{align-items:stretch}
+  .bulk-left,.bulk-right{width:100%}
+  .bulk-right .bulk-status-select,.bulk-right #bulkUpdateOrdersBtn{flex:1}
+}
+
 @media(max-width:650px){
   .top{padding:14px}
   .container{margin:20px auto;padding:0 12px}
@@ -352,6 +404,30 @@ h1,h2,h3{margin-top:0}
     </div>
 
     <div id="ordersMessage" class="message"></div>
+
+    <div class="bulk-orders-bar">
+      <div class="bulk-left">
+        <label class="bulk-check-label">
+          <input id="selectAllPending" type="checkbox">
+          Select All Pending
+        </label>
+        <button id="clearOrderSelectionBtn" class="btn secondary" type="button">Clear Selection</button>
+      </div>
+
+      <div class="bulk-right">
+        <select id="bulkOrderStatus" class="bulk-status-select">
+          <option value="confirmed">Confirmed</option>
+          <option value="packed">Packed</option>
+          <option value="shipped">Shipped</option>
+          <option value="out_for_delivery">Out for Delivery</option>
+          <option value="delivered">Delivered</option>
+          <option value="cancelled">Cancelled</option>
+          <option value="pending">Pending</option>
+        </select>
+        <button id="bulkUpdateOrdersBtn" class="btn primary" type="button">Update Selected</button>
+      </div>
+    </div>
+
     <div id="orders"></div>
   </div>
 </div>
@@ -1189,6 +1265,91 @@ async function updateOrderStatus(orderId, status, button){
   }
 }
 
+async function bulkUpdateOrderStatus(){
+
+  const selected = Array.from(
+    document.querySelectorAll(".order-select:checked")
+  ).map(cb => Number(cb.dataset.orderId));
+
+  const status = $("bulkOrderStatus").value;
+
+  if(!selected.length){
+    showMessage(
+      "ordersMessage",
+      "Please select at least one order.",
+      "error"
+    );
+    return;
+  }
+
+  const button = $("bulkUpdateOrdersBtn");
+  const originalText = button.textContent;
+  button.disabled = true;
+  button.textContent = "Updating...";
+
+  try{
+    const response = await fetch(
+      API_URL + "/api/admin/orders/bulk-status",
+      {
+        method:"POST",
+        headers:{
+          "Content-Type":"application/json"
+        },
+        body:JSON.stringify({
+          email:adminEmail,
+          password:adminPassword,
+          order_ids:selected,
+          status
+        })
+      }
+    );
+
+    const data = await response.json();
+
+    if(!response.ok || !data.success){
+      throw new Error(
+        data.error || "Bulk order update failed"
+      );
+    }
+
+    showMessage(
+      "ordersMessage",
+      `${data.updated_count || selected.length} order(s) updated to ${status.replaceAll("_"," ")} successfully.`,
+      "success"
+    );
+
+    $("selectAllPending").checked = false;
+    await loadOrders();
+
+  }catch(error){
+    showMessage(
+      "ordersMessage",
+      error.message,
+      "error"
+    );
+  }finally{
+    button.disabled = false;
+    button.textContent = originalText;
+  }
+}
+
+function clearOrderSelection(){
+  document.querySelectorAll(".order-select").forEach(cb => {
+    cb.checked = false;
+  });
+  $("selectAllPending").checked = false;
+}
+
+function selectAllPendingOrders(){
+  const master = $("selectAllPending");
+  document.querySelectorAll(".order-select").forEach(cb => {
+    const card = cb.closest(".order-card");
+    const statusSelect = card ? card.querySelector(".order-status-select") : null;
+    const isPending = statusSelect && String(statusSelect.value).toLowerCase() === "pending";
+    cb.checked = master.checked && isPending;
+  });
+}
+
 function renderOrders(orders){
 
   $("orderCount").textContent =
@@ -1235,13 +1396,16 @@ function renderOrders(orders){
       <div class="order-card">
 
         <div class="order-top">
-          <div>
-            <div class="order-id">Order #${Number(order.id)}</div>
-            <div class="meta">${escapeHtml(created)}</div>
+          <div class="order-select-wrap">
+            <input class="order-select" type="checkbox" data-order-id="${Number(order.id)}" ${String(order.status || "pending").toLowerCase() !== "pending" ? "" : ""}>
+            <div>
+              <div class="order-id">Order #${Number(order.id)}</div>
+              <div class="meta">${escapeHtml(created)}</div>
+            </div>
           </div>
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
             <select class="order-status-select" data-order-id="${Number(order.id)}" style="padding:7px 10px;border:1px solid #ccd2df;border-radius:8px;font-weight:700;text-transform:capitalize">
-              ${["pending","confirmed","shipped","delivered","cancelled"].map(status=>`<option value="${status}" ${String(order.status || "pending").toLowerCase() === status ? "selected" : ""}>${status}</option>`).join("")}
+              ${["pending","confirmed","packed","shipped","out_for_delivery","delivered","cancelled"].map(status=>`<option value="${status}" ${String(order.status || "pending").toLowerCase() === status ? "selected" : ""}>${status.replaceAll("_"," ")}</option>`).join("")}
             </select>
             <button class="btn primary update-order-status" data-order-id="${Number(order.id)}" style="padding:7px 12px">Update</button>
           </div>
@@ -1293,6 +1457,10 @@ $("orders").addEventListener("click",(event)=>{
 
   updateOrderStatus(orderId, select.value, button);
 });
+
+$("selectAllPending").addEventListener("change",selectAllPendingOrders);
+$("clearOrderSelectionBtn").addEventListener("click",clearOrderSelection);
+$("bulkUpdateOrdersBtn").addEventListener("click",bulkUpdateOrderStatus);
 
 $("refreshOrdersBtn").addEventListener("click",loadOrders);
 
