@@ -328,6 +328,22 @@ h1,h2,h3{margin-top:0}
   .toolbar{align-items:flex-start;flex-direction:column}
   .size-grid{grid-template-columns:1fr}
 }
+
+/* ---------- ORDER TABS / BULK ACTIONS ---------- */
+.order-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 16px;border-bottom:1px solid #e4e8f0;padding-bottom:0}
+.order-tab{border:0;background:transparent;padding:11px 14px;font-weight:700;color:#687287;border-bottom:3px solid transparent;border-radius:8px 8px 0 0}
+.order-tab:hover{background:#f5f7fb;color:#2167ed}
+.order-tab.active{color:#2167ed;border-bottom-color:#2167ed;background:#f7f9ff}
+.order-tab .count{font-size:12px;margin-left:4px}
+.bulk-orders-bar{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 14px;background:#f7f9fd;border:1px solid #dfe5f0;border-radius:12px;margin-bottom:16px}
+.bulk-left{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.bulk-right{display:flex;align-items:center;gap:8px}
+.bulk-check-label{display:flex;align-items:center;gap:8px;font-weight:800}
+.bulk-check-label input,.order-select{width:18px;height:18px;accent-color:#2167ed}
+.bulk-action-btn{min-width:145px}
+.order-select-wrap{display:flex;align-items:flex-start;gap:12px}
+@media(max-width:650px){.bulk-orders-bar{flex-direction:column;align-items:stretch}.bulk-right{width:100%}.bulk-action-btn{width:100%}.order-tabs{overflow-x:auto;flex-wrap:nowrap}.order-tab{white-space:nowrap}}
+
 </style>
 </head>
 
@@ -405,26 +421,19 @@ h1,h2,h3{margin-top:0}
 
     <div id="ordersMessage" class="message"></div>
 
+    <div id="orderTabs" class="order-tabs"></div>
+
     <div class="bulk-orders-bar">
       <div class="bulk-left">
         <label class="bulk-check-label">
           <input id="selectAllPending" type="checkbox">
-          Select All Pending
+          <span id="selectAllLabel">Select All</span>
         </label>
         <button id="clearOrderSelectionBtn" class="btn secondary" type="button">Clear Selection</button>
       </div>
 
       <div class="bulk-right">
-        <select id="bulkOrderStatus" class="bulk-status-select">
-          <option value="confirmed">Confirmed</option>
-          <option value="packed">Packed</option>
-          <option value="shipped">Shipped</option>
-          <option value="out_for_delivery">Out for Delivery</option>
-          <option value="delivered">Delivered</option>
-          <option value="cancelled">Cancelled</option>
-          <option value="pending">Pending</option>
-        </select>
-        <button id="bulkUpdateOrdersBtn" class="btn primary" type="button">Update Selected</button>
+        <button id="bulkUpdateOrdersBtn" class="btn primary bulk-action-btn" type="button">Accept Selected</button>
       </div>
     </div>
 
@@ -559,6 +568,8 @@ let adminEmail = "";
 let adminPassword = "";
 let products = [];
 let editingId = null;
+let allOrders = [];
+let currentOrderFilter = "pending";
 
 const $ = id => document.getElementById(id);
 
@@ -1194,7 +1205,9 @@ async function loadOrders(){
       throw new Error(data.error || "Could not load orders");
     }
 
-    renderOrders(data.orders || []);
+    allOrders = data.orders || [];
+    renderOrderTabs();
+    renderOrders();
     hideMessage("ordersMessage");
 
   }catch(error){
@@ -1265,20 +1278,111 @@ async function updateOrderStatus(orderId, status, button){
   }
 }
 
+function getOrderFilterLabel(filter){
+  const labels = {
+    pending: "Pending",
+    confirmed: "Confirmed",
+    packed: "Ready to Ship",
+    shipped: "Shipped",
+    out_for_delivery: "Out for Delivery",
+    delivered: "Delivered",
+    cancelled: "Cancelled"
+  };
+  return labels[filter] || filter;
+}
+
+function getNextOrderStatus(filter){
+  const next = {
+    pending: "confirmed",
+    confirmed: "packed",
+    packed: "shipped",
+    shipped: "out_for_delivery",
+    out_for_delivery: "delivered"
+  };
+  return next[filter] || "";
+}
+
+function getOrderCounts(){
+  const counts = {
+    pending:0,
+    confirmed:0,
+    packed:0,
+    shipped:0,
+    out_for_delivery:0,
+    delivered:0,
+    cancelled:0
+  };
+
+  allOrders.forEach(order=>{
+    const status = String(order.status || "pending").toLowerCase();
+    if(Object.prototype.hasOwnProperty.call(counts,status)) counts[status]++;
+  });
+
+  return counts;
+}
+
+function renderOrderTabs(){
+  const container = $("orderTabs");
+  if(!container) return;
+
+  const counts = getOrderCounts();
+  const tabs = [
+    ["pending","Pending"],
+    ["confirmed","Confirmed"],
+    ["packed","Ready to Ship"],
+    ["shipped","Shipped"],
+    ["out_for_delivery","Out for Delivery"],
+    ["delivered","Delivered"],
+    ["cancelled","Cancelled"]
+  ];
+
+  container.innerHTML = tabs.map(([key,label])=>`
+    <button type="button" class="order-tab ${currentOrderFilter === key ? "active" : ""}" data-order-filter="${key}">
+      ${label}<span class="count">(${counts[key] || 0})</span>
+    </button>
+  `).join("");
+
+  const nextStatus = getNextOrderStatus(currentOrderFilter);
+  const actionButton = $("bulkUpdateOrdersBtn");
+  const selectAllLabel = $("selectAllLabel");
+
+  if(actionButton){
+    if(nextStatus){
+      const actionLabels = {
+        confirmed:"Accept Selected",
+        packed:"Mark Ready to Ship",
+        shipped:"Mark Shipped",
+        out_for_delivery:"Mark Out for Delivery",
+        delivered:"Mark Delivered"
+      };
+      actionButton.textContent = actionLabels[nextStatus] || "Update Selected";
+      actionButton.disabled = false;
+    }else{
+      actionButton.textContent = currentOrderFilter === "cancelled" ? "No Action" : "Update Selected";
+      actionButton.disabled = true;
+    }
+  }
+
+  if(selectAllLabel){
+    selectAllLabel.textContent = `Select All ${getOrderFilterLabel(currentOrderFilter)}`;
+  }
+}
+
 async function bulkUpdateOrderStatus(){
 
   const selected = Array.from(
     document.querySelectorAll(".order-select:checked")
   ).map(cb => Number(cb.dataset.orderId));
 
-  const status = $("bulkOrderStatus").value;
+  const status = getNextOrderStatus(currentOrderFilter);
+
+  if(!status){
+    showMessage("ordersMessage","No bulk action is available for this status.","error");
+    return;
+  }
 
   if(!selected.length){
-    showMessage(
-      "ordersMessage",
-      "Please select at least one order.",
-      "error"
-    );
+    showMessage("ordersMessage","Please select at least one order.","error");
     return;
   }
 
@@ -1292,9 +1396,7 @@ async function bulkUpdateOrderStatus(){
       API_URL + "/api/admin/orders/bulk-status",
       {
         method:"POST",
-        headers:{
-          "Content-Type":"application/json"
-        },
+        headers:{"Content-Type":"application/json"},
         body:JSON.stringify({
           email:adminEmail,
           password:adminPassword,
@@ -1307,14 +1409,12 @@ async function bulkUpdateOrderStatus(){
     const data = await response.json();
 
     if(!response.ok || !data.success){
-      throw new Error(
-        data.error || "Bulk order update failed"
-      );
+      throw new Error(data.error || "Bulk order update failed");
     }
 
     showMessage(
       "ordersMessage",
-      `${data.updated_count || selected.length} order(s) updated to ${status.replaceAll("_"," ")} successfully.`,
+      `${data.updated_count || selected.length} order(s) moved to ${getOrderFilterLabel(status)} successfully.`,
       "success"
     );
 
@@ -1322,19 +1422,16 @@ async function bulkUpdateOrderStatus(){
     await loadOrders();
 
   }catch(error){
-    showMessage(
-      "ordersMessage",
-      error.message,
-      "error"
-    );
+    showMessage("ordersMessage",error.message,"error");
   }finally{
     button.disabled = false;
     button.textContent = originalText;
+    renderOrderTabs();
   }
 }
 
 function clearOrderSelection(){
-  document.querySelectorAll(".order-select").forEach(cb => {
+  document.querySelectorAll(".order-select").forEach(cb=>{
     cb.checked = false;
   });
   $("selectAllPending").checked = false;
@@ -1342,25 +1439,26 @@ function clearOrderSelection(){
 
 function selectAllPendingOrders(){
   const master = $("selectAllPending");
-  document.querySelectorAll(".order-select").forEach(cb => {
-    const card = cb.closest(".order-card");
-    const statusSelect = card ? card.querySelector(".order-status-select") : null;
-    const isPending = statusSelect && String(statusSelect.value).toLowerCase() === "pending";
-    cb.checked = master.checked && isPending;
+  document.querySelectorAll(".order-select").forEach(cb=>{
+    cb.checked = master.checked;
   });
 }
 
-function renderOrders(orders){
+function renderOrders(){
+
+  const orders = allOrders.filter(order =>
+    String(order.status || "pending").toLowerCase() === currentOrderFilter
+  );
 
   $("orderCount").textContent =
-    orders.length + " order(s)";
+    orders.length + " " + getOrderFilterLabel(currentOrderFilter) + " order(s)";
 
   if(!orders.length){
 
     $("orders").innerHTML = `
       <div class="card" style="box-shadow:none;border:1px solid #e4e8f0">
-        <h3>No orders yet</h3>
-        <p class="meta">Customer orders will appear here after successful checkout.</p>
+        <h3>No ${getOrderFilterLabel(currentOrderFilter)} orders</h3>
+        <p class="meta">Orders will appear here when they reach this stage.</p>
       </div>
     `;
 
@@ -1456,6 +1554,15 @@ $("orders").addEventListener("click",(event)=>{
   if(!select) return;
 
   updateOrderStatus(orderId, select.value, button);
+});
+
+$("orderTabs").addEventListener("click",(event)=>{
+  const tab = event.target.closest(".order-tab");
+  if(!tab) return;
+  currentOrderFilter = tab.dataset.orderFilter || "pending";
+  clearOrderSelection();
+  renderOrderTabs();
+  renderOrders();
 });
 
 $("selectAllPending").addEventListener("change",selectAllPendingOrders);
