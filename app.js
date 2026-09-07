@@ -1504,11 +1504,13 @@ async function loadMyOrders() {
 
 
       const trackingSteps = [
-        "pending",
-        "confirmed",
-        "shipped",
-        "delivered"
-      ];
+  "pending",
+  "confirmed",
+  "packed",
+  "shipped",
+  "out_for_delivery",
+  "delivered"
+];
 
 
       const currentIndex =
