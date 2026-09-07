@@ -675,17 +675,45 @@ function buildSizes(){
         value="0"
         disabled
         data-stock="${size}"
+        placeholder="Stock"
         title="Stock"
+      >
+
+      <input
+        type="number"
+        min="0"
+        value="0"
+        disabled
+        data-mrp="${size}"
+        placeholder="MRP"
+        title="MRP"
+      >
+
+      <input
+        type="number"
+        min="0"
+        value="0"
+        disabled
+        data-price="${size}"
+        placeholder="Price"
+        title="Selling Price"
       >
     `;
 
     const checkbox = row.querySelector("input[type=checkbox]");
-    const stock = row.querySelector("input[type=number]");
+    const stock = row.querySelector(`input[data-stock="${CSS.escape(size)}"]`);
+    const mrp = row.querySelector(`input[data-mrp="${CSS.escape(size)}"]`);
+    const price = row.querySelector(`input[data-price="${CSS.escape(size)}"]`);
 
     checkbox.addEventListener("change",()=>{
-      stock.disabled = !checkbox.checked;
-      if(checkbox.checked && Number(stock.value) === 0){
-        stock.value = 1;
+      const disabled = !checkbox.checked;
+
+      stock.disabled = disabled;
+      mrp.disabled = disabled;
+      price.disabled = disabled;
+
+      if(checkbox.checked){
+        if(Number(stock.value) === 0) stock.value = 1;
       }
     });
 
