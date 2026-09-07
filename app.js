@@ -374,9 +374,6 @@ function marketSearchProducts(query) {
       '"';
 
   }
-
-}
-
 const shop = document.getElementById("shop");
 
 if (shop) {
@@ -385,6 +382,9 @@ if (shop) {
     block: "start"
   });
 }
+}
+
+
 /* ---------- CATEGORY FILTER ---------- */
 
 function filterCat(category) {
