@@ -1009,11 +1009,25 @@ function collectSizes(){
       `input[data-stock="${CSS.escape(size)}"]`
     );
 
+    const mrp = document.querySelector(
+      `input[data-mrp="${CSS.escape(size)}"]`
+    );
+
+    const price = document.querySelector(
+      `input[data-price="${CSS.escape(size)}"]`
+    );
+
     if(checkbox && checkbox.checked){
+
+      const stockValue = Number(stock.value || 0);
+      const mrpValue = Number(mrp.value || 0);
+      const priceValue = Number(price.value || 0);
 
       sizes.push({
         size,
-        stock:Number(stock.value || 0)
+        stock: stockValue,
+        mrp: mrpValue,
+        price: priceValue
       });
 
     }
@@ -1022,7 +1036,6 @@ function collectSizes(){
 
   return sizes;
 }
-
 async function saveProduct(){
 
   const name = $("productName").value.trim();
