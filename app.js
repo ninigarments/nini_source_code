@@ -1557,9 +1557,17 @@ async function loadMyOrders() {
                 const active =
                   index <= currentIndex;
 
-                const label =
-                  step.charAt(0).toUpperCase() +
-                  step.slice(1);
+                const statusLabels = {
+  pending: "Pending",
+  confirmed: "Confirmed",
+  packed: "Packed",
+  shipped: "Shipped",
+  out_for_delivery: "Out for Delivery",
+  delivered: "Delivered"
+};
+
+const label =
+  statusLabels[step] || step;
 
                 return `
 
