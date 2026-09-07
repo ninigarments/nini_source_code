@@ -423,6 +423,18 @@ h1,h2,h3{margin-top:0}
 
     <div id="orderTabs" class="order-tabs"></div>
 
+    <div class="order-filters" style="display:flex;gap:10px;flex-wrap:wrap;margin:12px 0;">
+      <input id="orderSearchInput" type="search" placeholder="Search Order ID, customer, mobile..." style="flex:1;min-width:240px;padding:11px 13px;border:1px solid #ccd2df;border-radius:8px;font-size:14px;">
+      <select id="orderDateFilter" style="min-width:170px;padding:11px 13px;border:1px solid #ccd2df;border-radius:8px;font-size:14px;background:#fff;">
+        <option value="all">All Dates</option>
+        <option value="today">Today</option>
+        <option value="yesterday">Yesterday</option>
+        <option value="7days">Last 7 Days</option>
+        <option value="30days">Last 30 Days</option>
+      </select>
+      <button id="clearOrderFiltersBtn" class="btn secondary" type="button">Clear Filters</button>
+    </div>
+
     <div class="bulk-orders-bar">
       <div class="bulk-left">
         <label class="bulk-check-label">
@@ -1444,11 +1456,56 @@ function selectAllPendingOrders(){
   });
 }
 
+function getFilteredOrders(){
+
+  const search = String($("orderSearchInput")?.value || "")
+    .trim()
+    .toLowerCase();
+
+  const dateFilter = $("orderDateFilter")?.value || "all";
+
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const yesterdayStart = todayStart - 86400000;
+  const sevenDaysStart = todayStart - (6 * 86400000);
+  const thirtyDaysStart = todayStart - (29 * 86400000);
+
+  return allOrders.filter(order => {
+
+    const status = String(order.status || "pending").toLowerCase();
+    if(status !== currentOrderFilter) return false;
+
+    if(search){
+      const haystack = [
+        order.id,
+        order.full_name,
+        order.customer_name,
+        order.mobile,
+        order.customer_email,
+        order.city,
+        order.pin_code
+      ].map(value => String(value || "").toLowerCase()).join(" ");
+
+      if(!haystack.includes(search)) return false;
+    }
+
+    if(dateFilter !== "all"){
+      const orderTime = order.created_at ? new Date(order.created_at).getTime() : NaN;
+      if(Number.isNaN(orderTime)) return false;
+
+      if(dateFilter === "today" && orderTime < todayStart) return false;
+      if(dateFilter === "yesterday" && (orderTime < yesterdayStart || orderTime >= todayStart)) return false;
+      if(dateFilter === "7days" && orderTime < sevenDaysStart) return false;
+      if(dateFilter === "30days" && orderTime < thirtyDaysStart) return false;
+    }
+
+    return true;
+  });
+}
+
 function renderOrders(){
 
-  const orders = allOrders.filter(order =>
-    String(order.status || "pending").toLowerCase() === currentOrderFilter
-  );
+  const orders = getFilteredOrders();
 
   $("orderCount").textContent =
     orders.length + " " + getOrderFilterLabel(currentOrderFilter) + " order(s)";
@@ -1567,6 +1624,23 @@ $("orderTabs").addEventListener("click",(event)=>{
 
 $("selectAllPending").addEventListener("change",selectAllPendingOrders);
 $("clearOrderSelectionBtn").addEventListener("click",clearOrderSelection);
+
+$("orderSearchInput").addEventListener("input",()=>{
+  clearOrderSelection();
+  renderOrders();
+});
+
+$("orderDateFilter").addEventListener("change",()=>{
+  clearOrderSelection();
+  renderOrders();
+});
+
+$("clearOrderFiltersBtn").addEventListener("click",()=>{
+  $("orderSearchInput").value = "";
+  $("orderDateFilter").value = "all";
+  clearOrderSelection();
+  renderOrders();
+});
 $("bulkUpdateOrdersBtn").addEventListener("click",bulkUpdateOrderStatus);
 
 $("refreshOrdersBtn").addEventListener("click",loadOrders);
