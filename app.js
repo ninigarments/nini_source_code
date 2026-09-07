@@ -377,7 +377,14 @@ function marketSearchProducts(query) {
 
 }
 
+const shop = document.getElementById("shop");
 
+if (shop) {
+  shop.scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  });
+}
 /* ---------- CATEGORY FILTER ---------- */
 
 function filterCat(category) {
