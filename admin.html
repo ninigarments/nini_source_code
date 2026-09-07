@@ -344,6 +344,8 @@ h1,h2,h3{margin-top:0}
 .order-select-wrap{display:flex;align-items:flex-start;gap:12px}
 @media(max-width:650px){.bulk-orders-bar{flex-direction:column;align-items:stretch}.bulk-right{width:100%}.bulk-action-btn{width:100%}.order-tabs{overflow-x:auto;flex-wrap:nowrap}.order-tab{white-space:nowrap}}
 
+
+.detail-header{display:flex;justify-content:space-between;align-items:flex-start;gap:15px;padding-bottom:18px;border-bottom:1px solid #e5e7eb}.detail-order-id{font-size:24px;font-weight:800}.detail-status{padding:7px 13px;border-radius:999px;background:#eef2ff;color:#1d4ed8;font-weight:700;font-size:13px}.detail-section{padding:18px 0;border-bottom:1px solid #e5e7eb}.detail-section:last-child{border-bottom:0}.detail-section h3{margin:0 0 12px;font-size:16px}.detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.detail-grid>div{background:#f8fafc;border-radius:10px;padding:11px 13px}.detail-grid strong,.detail-grid span{display:block}.detail-grid strong{font-size:12px;color:#64748b;margin-bottom:4px}.detail-address{background:#f8fafc;border-radius:10px;padding:13px;line-height:1.6}.detail-item{display:flex;justify-content:space-between;gap:15px;padding:12px 0;border-bottom:1px solid #eef2f7}.detail-total{display:flex;justify-content:space-between;align-items:center;padding-top:15px;font-size:18px}@media(max-width:600px){.detail-grid{grid-template-columns:1fr}.detail-header{padding-right:35px}}
 </style>
 </head>
 
@@ -1503,6 +1505,91 @@ function getFilteredOrders(){
   });
 }
 
+
+function openOrderDetails(orderId){
+
+  const order = allOrders.find(o => Number(o.id) === Number(orderId));
+  if(!order) return;
+
+  const items = Array.isArray(order.items) ? order.items : [];
+  const status = String(order.status || "pending").toLowerCase();
+  const statusLabel = {
+    pending:"Pending",
+    confirmed:"Confirmed",
+    packed:"Packed",
+    shipped:"Shipped",
+    out_for_delivery:"Out for Delivery",
+    delivered:"Delivered",
+    cancelled:"Cancelled"
+  }[status] || status;
+
+  const created = order.created_at
+    ? new Date(order.created_at).toLocaleString("en-IN")
+    : "—";
+
+  const itemsHtml = items.length
+    ? items.map(item => `
+        <div class="detail-item">
+          <div>
+            <strong>${escapeHtml(item.name || "Product")}</strong>
+            <div class="meta">
+              ${item.size ? "Size: " + escapeHtml(item.size) + " • " : ""}
+              Qty: ${Number(item.quantity || 0)}
+            </div>
+          </div>
+          <strong>₹${(Number(item.price || 0) * Number(item.quantity || 0)).toLocaleString("en-IN")}</strong>
+        </div>
+      `).join("")
+    : `<div class="meta">No item details found.</div>`;
+
+  const modal = document.getElementById("orderDetailsModal");
+  const content = document.getElementById("orderDetailsContent");
+  if(!modal || !content) return;
+
+  content.innerHTML = `
+    <div class="detail-header">
+      <div>
+        <div class="detail-order-id">Order #${Number(order.id)}</div>
+        <div class="meta">${escapeHtml(created)}</div>
+      </div>
+      <span class="detail-status">${escapeHtml(statusLabel)}</span>
+    </div>
+
+    <div class="detail-section">
+      <h3>Customer Details</h3>
+      <div class="detail-grid">
+        <div><strong>Name</strong><span>${escapeHtml(order.full_name || order.customer_name || "—")}</span></div>
+        <div><strong>Mobile</strong><span>${escapeHtml(order.mobile || "—")}</span></div>
+        <div><strong>Email</strong><span>${escapeHtml(order.customer_email || "—")}</span></div>
+      </div>
+    </div>
+
+    <div class="detail-section">
+      <h3>Delivery Address</h3>
+      <div class="detail-address">
+        ${escapeHtml(order.address || "—")}<br>
+        ${escapeHtml(order.city || "—")}, ${escapeHtml(order.state || "—")} - ${escapeHtml(order.pin_code || "—")}
+      </div>
+    </div>
+
+    <div class="detail-section">
+      <h3>Order Items</h3>
+      <div class="detail-items">${itemsHtml}</div>
+      <div class="detail-total">
+        <span>Total Amount</span>
+        <strong>₹${Number(order.total_amount || 0).toLocaleString("en-IN")}</strong>
+      </div>
+    </div>
+  `;
+
+  modal.style.display = "flex";
+}
+
+function closeOrderDetails(){
+  const modal = document.getElementById("orderDetailsModal");
+  if(modal) modal.style.display = "none";
+}
+
 function renderOrders(){
 
   const orders = getFilteredOrders();
@@ -1563,6 +1650,7 @@ function renderOrders(){
               ${["pending","confirmed","packed","shipped","out_for_delivery","delivered","cancelled"].map(status=>`<option value="${status}" ${String(order.status || "pending").toLowerCase() === status ? "selected" : ""}>${status.replaceAll("_"," ")}</option>`).join("")}
             </select>
             <button class="btn primary update-order-status" data-order-id="${Number(order.id)}" style="padding:7px 12px">Update</button>
+            <button class="btn view-order-details" data-order-id="${Number(order.id)}" style="padding:7px 12px">View Details</button>
           </div>
         </div>
 
@@ -1603,6 +1691,12 @@ $("ordersBtn").addEventListener("click",()=>{
 });
 
 $("orders").addEventListener("click",(event)=>{
+  const detailsButton = event.target.closest(".view-order-details");
+  if(detailsButton){
+    openOrderDetails(detailsButton.dataset.orderId);
+    return;
+  }
+
   const button = event.target.closest(".update-order-status");
   if(!button) return;
 
@@ -1680,6 +1774,14 @@ $("logoutBtn").addEventListener("click",()=>{
 
 buildSizes();
 </script>
+
+
+<div id="orderDetailsModal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.58);z-index:100000;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#fff;width:min(760px,100%);max-height:90vh;overflow:auto;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.25);position:relative;">
+    <button onclick="closeOrderDetails()" style="position:absolute;right:16px;top:12px;border:0;background:#f1f5f9;border-radius:50%;width:34px;height:34px;font-size:22px;cursor:pointer;">×</button>
+    <div id="orderDetailsContent" style="padding:24px;"></div>
+  </div>
+</div>
 
 </body>
 </html>
