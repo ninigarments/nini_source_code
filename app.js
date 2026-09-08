@@ -200,23 +200,11 @@ function renderProducts(list) {
           </h3>
 
 
-          <div class="price">
-
-            ₹${Number(product.price || 0).toLocaleString("en-IN")}
-
-            ${
-              Number(product.mrp || 0) > Number(product.price || 0)
-                ? `
-                  <del style="margin-left:8px;color:#68748b;font-size:0.9em;">
-                    ₹${Number(product.mrp).toLocaleString("en-IN")}
-                  </del>
-                  <span style="margin-left:8px;font-size:0.85em;">
-                    ${Number(product.discount || 0)}% OFF
-                  </span>
-                `
-                : ""
-            }
-
+          <div
+            class="price"
+            id="price-${product.id}"
+          >
+            Select size for price
           </div>
 
 
@@ -236,6 +224,8 @@ function renderProducts(list) {
           <select
 
             id="size-${product.id}"
+
+            onchange="updateSizePrice(${product.id})"
 
             ${sizes.length ? "" : "disabled"}
 
@@ -374,14 +364,7 @@ function marketSearchProducts(query) {
       '"';
 
   }
-const shop = document.getElementById("shop");
 
-if (shop) {
-  shop.scrollIntoView({
-    behavior: "smooth",
-    block: "start"
-  });
-}
 }
 
 
@@ -534,6 +517,75 @@ function sortMarketProducts(type) {
 }
 
 
+/* ---------- SIZE-WISE PRICE ---------- */
+
+function updateSizePrice(productId) {
+
+  const product = products.find(
+    p => Number(p.id) === Number(productId)
+  );
+
+  const priceElement = document.getElementById(
+    `price-${productId}`
+  );
+
+  if (!product || !priceElement) return;
+
+  const sizeElement = document.getElementById(
+    `size-${productId}`
+  );
+
+  const selectedSizeValue = sizeElement
+    ? sizeElement.value
+    : "";
+
+  if (!selectedSizeValue) {
+    priceElement.textContent = "Select size for price";
+    return;
+  }
+
+  const selectedSize = Array.isArray(product.sizes)
+    ? product.sizes.find(
+        s => String(s.size) === String(selectedSizeValue)
+      )
+    : null;
+
+  if (!selectedSize) {
+    priceElement.textContent = "Price unavailable";
+    return;
+  }
+
+  const price = Number(
+    selectedSize.price ?? product.price ?? 0
+  );
+
+  const mrp = Number(
+    selectedSize.mrp ?? product.mrp ?? price
+  );
+
+  const discount =
+    mrp > 0
+      ? Math.max(0, Math.round(((mrp - price) / mrp) * 100))
+      : 0;
+
+  priceElement.innerHTML = `
+    ₹${price.toLocaleString("en-IN")}
+    ${
+      mrp > price
+        ? `
+          <del style="margin-left:8px;color:#68748b;font-size:0.9em;">
+            ₹${mrp.toLocaleString("en-IN")}
+          </del>
+          <span style="margin-left:8px;font-size:0.85em;">
+            ${discount}% OFF
+          </span>
+        `
+        : ""
+    }
+  `;
+}
+
+
 /* ---------- ADD TO CART ---------- */
 
 function addToCart(productId) {
@@ -666,11 +718,29 @@ function addToCart(productId) {
 
       category: product.category,
 
-      price: Number(product.price),
+      price: Number(
+        selectedSize.price ?? product.price ?? 0
+      ),
 
-      mrp: Number(product.mrp || product.price || 0),
+      mrp: Number(
+        selectedSize.mrp ?? product.mrp ?? product.price ?? 0
+      ),
 
-      discount: Number(product.discount || 0),
+      discount:
+        Number(selectedSize.mrp ?? product.mrp ?? 0) > 0
+          ? Math.max(
+              0,
+              Math.round(
+                (
+                  (
+                    Number(selectedSize.mrp ?? product.mrp ?? 0) -
+                    Number(selectedSize.price ?? product.price ?? 0)
+                  ) /
+                  Number(selectedSize.mrp ?? product.mrp ?? 0)
+                ) * 100
+              )
+            )
+          : 0,
 
       size: size,
 
@@ -869,17 +939,33 @@ function renderCart() {
         p => Number(p.id) === Number(item.id)
       );
 
+      const liveSize = Array.isArray(liveProduct?.sizes)
+        ? liveProduct.sizes.find(
+            s => String(s.size) === String(item.size)
+          )
+        : null;
+
       const itemPrice = Number(
-        item.price || liveProduct?.price || 0
+        item.price ??
+        liveSize?.price ??
+        liveProduct?.price ??
+        0
       );
 
       const itemMrp = Number(
-        item.mrp || liveProduct?.mrp || item.price || 0
+        item.mrp ??
+        liveSize?.mrp ??
+        liveProduct?.mrp ??
+        itemPrice
       );
 
-      const itemDiscount = Number(
-        item.discount || liveProduct?.discount || 0
-      );
+      const itemDiscount =
+        itemMrp > 0
+          ? Math.max(
+              0,
+              Math.round(((itemMrp - itemPrice) / itemMrp) * 100)
+            )
+          : 0;
 
       const itemQuantity = Number(item.quantity || 0);
 
@@ -1004,13 +1090,38 @@ function renderCart() {
 
   const savings = cart.reduce(
 
-    (sum, item) =>
+    (sum, item) => {
 
-      sum +
+      const liveProduct = products.find(
+        p => Number(p.id) === Number(item.id)
+      );
 
-      Math.max(0, Number(item.mrp || item.price || 0) - Number(item.price || 0)) *
+      const liveSize = Array.isArray(liveProduct?.sizes)
+        ? liveProduct.sizes.find(
+            s => String(s.size) === String(item.size)
+          )
+        : null;
 
-      Number(item.quantity || 0),
+      const price = Number(
+        item.price ??
+        liveSize?.price ??
+        liveProduct?.price ??
+        0
+      );
+
+      const mrp = Number(
+        item.mrp ??
+        liveSize?.mrp ??
+        liveProduct?.mrp ??
+        price
+      );
+
+      return (
+        sum +
+        Math.max(0, mrp - price) *
+        Number(item.quantity || 0)
+      );
+    },
 
     0
 
@@ -1274,633 +1385,6 @@ async function submitCheckout(event) {
 
 /* ---------- PLACE ORDER (legacy entry point) ---------- */
 
-/* ---------- MY ORDERS / ORDER TRACKING ---------- */
-
-function getCurrentNiniUser() {
-  try {
-    return JSON.parse(localStorage.getItem("nini_user") || "null");
-  } catch (error) {
-    return null;
-  }
-}
-
-
-function ensureMyOrdersModal() {
-
-  if (document.getElementById("myOrdersModal")) {
-    return;
-  }
-
-  const modal = document.createElement("div");
-
-  modal.id = "myOrdersModal";
-
-  modal.style.cssText = `
-    position:fixed;
-    inset:0;
-    background:rgba(0,0,0,.55);
-    display:none;
-    align-items:center;
-    justify-content:center;
-    z-index:99999;
-    padding:20px;
-  `;
-
-  modal.innerHTML = `
-
-    <div style="
-      background:#fff;
-      width:min(900px,100%);
-      max-height:90vh;
-      overflow:auto;
-      border-radius:14px;
-      padding:22px;
-      position:relative;
-      box-shadow:0 15px 50px rgba(0,0,0,.25);
-    ">
-
-      <button
-        onclick="closeMyOrders()"
-        style="
-          position:absolute;
-          right:15px;
-          top:12px;
-          border:0;
-          background:transparent;
-          font-size:25px;
-          cursor:pointer;
-        "
-      >
-        ×
-      </button>
-
-      <h2 style="margin:0 0 5px;">
-        My Orders
-      </h2>
-
-      <p style="margin:0 0 18px;color:#68748b;">
-        Track your Nini Garments orders
-      </p>
-
-      <div id="myOrdersContent">
-
-        <div style="padding:30px;text-align:center;">
-          Loading orders...
-        </div>
-
-      </div>
-
-    </div>
-
-  `;
-
-  document.body.appendChild(modal);
-}
-
-
-function openMyOrders() {
-
-  const user = getCurrentNiniUser();
-
-  if (!user || !user.id) {
-
-    alert("Please login to view your orders.");
-
-    return;
-
-  }
-
-  ensureMyOrdersModal();
-
-  const modal =
-    document.getElementById("myOrdersModal");
-
-  modal.style.display = "flex";
-
-  document.body.style.overflow = "hidden";
-
-  loadMyOrders();
-
-}
-
-
-function closeMyOrders() {
-
-  const modal =
-    document.getElementById("myOrdersModal");
-
-  if (modal) {
-
-    modal.style.display = "none";
-
-  }
-
-  document.body.style.overflow = "";
-
-}
-
-
-async function loadMyOrders() {
-
-  const content =
-    document.getElementById("myOrdersContent");
-
-  if (!content) return;
-
-
-  const user = getCurrentNiniUser();
-
-
-  if (!user || !user.id) {
-
-    content.innerHTML = `
-      <div style="padding:25px;text-align:center;">
-        Please login to view your orders.
-      </div>
-    `;
-
-    return;
-
-  }
-
-
-  content.innerHTML = `
-    <div style="padding:25px;text-align:center;">
-      Loading your orders...
-    </div>
-  `;
-
-
-  try {
-
-    const response = await fetch(
-      `${API_URL}/api/orders/user/${encodeURIComponent(Number(user.id))}`,
-      {
-        method: "GET"
-      }
-    );
-
-
-    if (!response.ok) {
-
-      throw new Error(
-        "Unable to load orders"
-      );
-
-    }
-
-
-    const data = await response.json();
-
-
-    const orders =
-      Array.isArray(data.orders)
-        ? data.orders
-        : [];
-
-
-    if (!orders.length) {
-
-      content.innerHTML = `
-
-        <div style="
-          padding:40px 20px;
-          text-align:center;
-          color:#68748b;
-        ">
-
-          <div style="font-size:42px;">
-            📦
-          </div>
-
-          <h3 style="color:#111;">
-            No orders yet
-          </h3>
-
-          <p>
-            Your placed orders will appear here.
-          </p>
-
-        </div>
-
-      `;
-
-      return;
-
-    }
-
-
-    content.innerHTML = orders.map(order => {
-
-      const status =
-        String(order.status || "pending")
-          .toLowerCase();
-
-
-      const date =
-        order.created_at
-          ? new Date(order.created_at)
-              .toLocaleString("en-IN")
-          : "";
-
-
-      const items =
-        Array.isArray(order.items)
-          ? order.items
-          : [];
-
-
-      const trackingSteps = [
-  "pending",
-  "confirmed",
-  "packed",
-  "shipped",
-  "out_for_delivery",
-  "delivered"
-];
-
-
-      const currentIndex =
-        trackingSteps.indexOf(status);
-
-
-      let trackingHTML = "";
-
-
-      if (status === "cancelled") {
-
-        trackingHTML = `
-
-          <div style="
-            margin-top:18px;
-            padding:12px;
-            background:#fff1f2;
-            color:#be123c;
-            border-radius:8px;
-            font-weight:700;
-          ">
-
-            ❌ Order Cancelled
-
-          </div>
-
-        `;
-
-      } else {
-
-        trackingHTML = `
-
-          <div style="
-            display:flex;
-            justify-content:space-between;
-            gap:5px;
-            margin-top:20px;
-            position:relative;
-          ">
-
-            ${trackingSteps.map(
-              (step, index) => {
-
-                const active =
-                  index <= currentIndex;
-
-                const statusLabels = {
-  pending: "Pending",
-  confirmed: "Confirmed",
-  packed: "Packed",
-  shipped: "Shipped",
-  out_for_delivery: "Out for Delivery",
-  delivered: "Delivered"
-};
-
-const label =
-  statusLabels[step] || step;
-
-                return `
-
-                  <div style="
-                    flex:1;
-                    text-align:center;
-                    position:relative;
-                  ">
-
-                    <div style="
-                      width:30px;
-                      height:30px;
-                      border-radius:50%;
-                      margin:0 auto 6px;
-                      display:flex;
-                      align-items:center;
-                      justify-content:center;
-                      background:${active ? "#111" : "#ddd"};
-                      color:${active ? "#fff" : "#777"};
-                      font-size:13px;
-                      font-weight:700;
-                    ">
-
-                      ${index + 1}
-
-                    </div>
-
-                    <div style="
-                      font-size:12px;
-                      font-weight:${active ? "700" : "500"};
-                      color:${active ? "#111" : "#888"};
-                    ">
-
-                      ${label}
-
-                    </div>
-
-                  </div>
-
-                `;
-
-              }
-            ).join("")}
-
-          </div>
-
-        `;
-
-      }
-
-
-      return `
-
-        <div style="
-          border:1px solid #e5e7eb;
-          border-radius:12px;
-          padding:18px;
-          margin-bottom:16px;
-          background:#fff;
-        ">
-
-          <div style="
-            display:flex;
-            justify-content:space-between;
-            gap:10px;
-            flex-wrap:wrap;
-          ">
-
-            <div>
-
-              <strong>
-                Order #${escapeHTML(String(order.id))}
-              </strong>
-
-              <div style="
-                color:#68748b;
-                font-size:13px;
-                margin-top:4px;
-              ">
-
-                ${escapeHTML(date)}
-
-              </div>
-
-            </div>
-
-
-            <div style="
-              font-weight:800;
-              font-size:18px;
-            ">
-
-              ₹${Number(
-                order.total_amount || 0
-              ).toLocaleString("en-IN")}
-
-            </div>
-
-          </div>
-
-
-          <div style="
-            margin-top:15px;
-          ">
-
-            ${
-              items.length
-
-                ? items.map(item => `
-
-                    <div style="
-                      padding:10px 0;
-                      border-bottom:1px solid #f0f0f0;
-                    ">
-
-                      <strong>
-                        ${escapeHTML(
-                          item.name || "Product"
-                        )}
-                      </strong>
-
-                      <div style="
-                        color:#68748b;
-                        font-size:13px;
-                        margin-top:3px;
-                      ">
-
-                        Size:
-                        ${escapeHTML(
-                          item.size || "-"
-                        )}
-
-                        &nbsp; • &nbsp;
-
-                        Qty:
-                        ${Number(
-                          item.quantity || 0
-                        )}
-
-                        &nbsp; • &nbsp;
-
-                        ₹${Number(
-                          item.price || 0
-                        ).toLocaleString("en-IN")}
-
-                      </div>
-
-                    </div>
-
-                  `).join("")
-
-                : `
-                    <div style="
-                      color:#68748b;
-                    ">
-                      Order items unavailable.
-                    </div>
-                  `
-            }
-
-          </div>
-
-
-          <div style="
-            margin-top:15px;
-            display:inline-block;
-            padding:6px 12px;
-            border-radius:20px;
-            background:#f3f4f6;
-            font-size:13px;
-            font-weight:700;
-            text-transform:capitalize;
-          ">
-
-            ${escapeHTML(status)}
-
-          </div>
-
-
-          ${trackingHTML}
-
-        </div>
-
-      `;
-
-    }).join("");
-
-
-  } catch (error) {
-
-    console.error(
-      "My Orders error:",
-      error
-    );
-
-
-    content.innerHTML = `
-
-      <div style="
-        padding:30px;
-        text-align:center;
-      ">
-
-        <strong>
-          Unable to load your orders.
-        </strong>
-
-        <br><br>
-
-        Please refresh and try again.
-
-      </div>
-
-    `;
-
-  }
-
-}
-
-
-/* ---------- MY ORDERS BUTTON / HEADER LINK ---------- */
-
-document.addEventListener(
-  "click",
-  function(event) {
-
-    const ordersLink =
-      event.target.closest(
-        'a[href="#orders"], [data-orders-link]'
-      );
-
-
-    if (ordersLink) {
-
-      event.preventDefault();
-
-      openMyOrders();
-
-    }
-
-  }
-);
-
-
-/* ---------- ADD MY ORDERS TO ACCOUNT MODAL ---------- */
-
-document.addEventListener(
-  "DOMContentLoaded",
-  function() {
-
-    const accountModal =
-      document.getElementById(
-        "accountModal"
-      );
-
-
-    if (!accountModal) return;
-
-
-    if (
-      accountModal.querySelector(
-        ".nini-my-orders-btn"
-      )
-    ) {
-      return;
-    }
-
-
-    const button =
-      document.createElement("button");
-
-
-    button.className =
-      "nini-my-orders-btn";
-
-
-    button.type = "button";
-
-
-    button.textContent =
-      "📦 My Orders";
-
-
-    button.style.cssText = `
-      width:100%;
-      margin-top:10px;
-      padding:11px 14px;
-      border:1px solid #ddd;
-      border-radius:8px;
-      background:#fff;
-      cursor:pointer;
-      font-weight:700;
-    `;
-
-
-    button.onclick =
-      function() {
-
-        openMyOrders();
-
-      };
-
-
-    const logoutButton =
-      accountModal.querySelector(
-        'button[onclick*="logout"], #logoutBtn'
-      );
-
-
-    if (logoutButton) {
-
-      logoutButton.parentNode.insertBefore(
-        button,
-        logoutButton
-      );
-
-    } else {
-
-      accountModal.appendChild(
-        button
-      );
-
-    }
-
-  }
-);
 /* ---------- ESCAPE HTML ---------- */
 
 function escapeHTML(value) {
