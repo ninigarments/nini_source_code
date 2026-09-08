@@ -548,11 +548,18 @@
       if(!modal || !content || !name) return;
 
       const image = product.image || "nini-logo.jpeg";
-      const price = Number(product.price || 0);
-      const mrp = Number(product.mrp || 0);
-      const discount = Number(product.discount || 0);
       const sizes = Array.isArray(product.sizes) ? product.sizes : [];
       const inStockSizes = sizes.filter(s => Number(s.stock || 0) > 0);
+      const lowestPrice = typeof getLowestSellingPrice === "function"
+        ? getLowestSellingPrice(product)
+        : Number(product.price || 0);
+      const lowestMrp = inStockSizes.length
+        ? Math.min(...inStockSizes.map(s => Number(s.mrp || s.price || 0)).filter(v => v > 0))
+        : Number(product.mrp || lowestPrice || 0);
+      const initialDiscount = lowestMrp > lowestPrice && lowestMrp > 0
+        ? Math.round(((lowestMrp - lowestPrice) / lowestMrp) * 100)
+        : 0;
+      const wished = typeof isWishlisted === "function" && isWishlisted(product.id);
 
       name.textContent = product.name || "Product";
 
@@ -562,43 +569,87 @@
             <img src="${escapeHTML(image)}"
                  alt="${escapeHTML(product.name)}"
                  onerror="this.src='nini-logo.jpeg'"
-                 style="width:100%;max-height:420px;object-fit:contain;border-radius:12px;background:#f7f8fb">
+                 style="width:100%;max-height:430px;object-fit:contain;border-radius:12px;background:#f7f8fb">
           </div>
+
           <div>
-            <div style="font-size:28px;font-weight:800;color:#111827">
-              ₹${price.toLocaleString("en-IN")}
-              ${mrp > price ? `
-                <del style="color:#68748b;font-size:16px;font-weight:500;margin-left:8px">
-                  ₹${mrp.toLocaleString("en-IN")}
-                </del>
-                <span style="color:#16a34a;font-size:15px;font-weight:700;margin-left:8px">
-                  ${discount}% OFF
-                </span>
-              ` : ""}
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+              <div id="detail-price-wrap-${product.id}" style="font-size:28px;font-weight:800;color:#111827">
+                ₹${lowestPrice.toLocaleString("en-IN")}
+                ${lowestMrp > lowestPrice ? `
+                  <del style="color:#68748b;font-size:16px;font-weight:500;margin-left:8px">
+                    ₹${lowestMrp.toLocaleString("en-IN")}
+                  </del>
+                  <span style="color:#16a34a;font-size:15px;font-weight:700;margin-left:8px">
+                    ${initialDiscount}% OFF
+                  </span>
+                ` : ""}
+              </div>
+
+              <button
+                type="button"
+                id="detail-wishlist-${product.id}"
+                data-wishlist-id="${product.id}"
+                onclick="toggleWishlist(${product.id})"
+                aria-label="${wished ? "Remove from wishlist" : "Add to wishlist"}"
+                title="${wished ? "Remove from wishlist" : "Add to wishlist"}"
+                style="width:42px;height:42px;border:1px solid #e5e7eb;border-radius:50%;background:#fff;font-size:25px;cursor:pointer;color:${wished ? "#e11d48" : "#475569"}"
+              >${wished ? "♥" : "♡"}</button>
             </div>
 
-            ${product.category ? `<div style="margin-top:10px;color:#68748b">Category: ${escapeHTML(product.category)}</div>` : ""}
+            ${product.category ? `<div style="margin-top:12px;color:#68748b">Category: ${escapeHTML(product.category)}</div>` : ""}
             ${product.age_group ? `<div style="margin-top:6px;color:#68748b">Age Group: ${escapeHTML(product.age_group)}</div>` : ""}
             ${product.sku ? `<div style="margin-top:6px;color:#68748b">SKU: ${escapeHTML(product.sku)}</div>` : ""}
 
-            ${product.description ? `
-              <div style="margin-top:18px">
-                <strong>Description</strong>
-                <p style="color:#4b5563;line-height:1.6;margin-top:7px">${escapeHTML(product.description)}</p>
-              </div>
-            ` : ""}
+            <div style="margin-top:16px;padding:12px 14px;border:1px solid #edf0f5;border-radius:10px;background:#fafbfc">
+              <div style="font-weight:800">⭐ Customer Rating</div>
+              <div style="margin-top:4px;color:#68748b;font-size:13px">No reviews yet · Reviews will appear here.</div>
+            </div>
 
             <div style="margin-top:18px">
               <strong>Available Sizes</strong>
-              <select id="detail-size-${product.id}" style="width:100%;margin-top:9px;padding:10px;border:1px solid #d9deea;border-radius:7px;background:#fff;font-size:15px" ${inStockSizes.length ? "" : "disabled"}>
+              <select id="detail-size-${product.id}"
+                      onchange="updateDetailSize(${product.id})"
+                      style="width:100%;margin-top:9px;padding:11px;border:1px solid #d9deea;border-radius:7px;background:#fff;font-size:15px"
+                      ${inStockSizes.length ? "" : "disabled"}>
                 <option value="">Select Size</option>
                 ${inStockSizes.map(s => `<option value="${escapeHTML(s.size)}">${escapeHTML(s.size)} · ${Number(s.stock)} left</option>`).join("")}
               </select>
             </div>
 
-            <button type="button" class="market-btn primary" style="width:100%;margin-top:16px" onclick="addDetailProductToCart(${product.id})" ${inStockSizes.length ? "" : "disabled"}>
-              ${inStockSizes.length ? "Add to Cart 🛒" : "Out of Stock"}
-            </button>
+            <div id="detail-stock-${product.id}" style="margin-top:7px;color:#16a34a;font-size:13px;font-weight:700;min-height:18px"></div>
+
+            <div style="margin-top:16px">
+              <strong>Quantity</strong>
+              <div style="display:flex;align-items:center;gap:10px;margin-top:9px">
+                <button type="button" onclick="changeDetailQuantity(${product.id},-1)" style="width:38px;height:38px;border:1px solid #d9deea;background:#fff;border-radius:7px;font-size:20px;cursor:pointer">−</button>
+                <span id="detail-qty-${product.id}" style="min-width:25px;text-align:center;font-weight:800">1</span>
+                <button type="button" onclick="changeDetailQuantity(${product.id},1)" style="width:38px;height:38px;border:1px solid #d9deea;background:#fff;border-radius:7px;font-size:20px;cursor:pointer">+</button>
+              </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px">
+              <button type="button" class="market-btn primary" onclick="addDetailProductToCart(${product.id})" ${inStockSizes.length ? "" : "disabled"}>
+                ${inStockSizes.length ? "Add to Cart 🛒" : "Out of Stock"}
+              </button>
+              <button type="button" class="market-btn" style="border:1px solid #1f2937;background:#fff;color:#111827" onclick="buyNowFromDetail(${product.id})" ${inStockSizes.length ? "" : "disabled"}>
+                ${inStockSizes.length ? "Buy Now ⚡" : "Out of Stock"}
+              </button>
+            </div>
+
+            <div style="margin-top:20px;padding-top:16px;border-top:1px solid #edf0f5">
+              <strong>Description</strong>
+              <p style="color:#4b5563;line-height:1.65;margin-top:7px">
+                ${product.description ? escapeHTML(product.description) : "Product description will be available soon."}
+              </p>
+            </div>
+
+            ${product.tags ? `
+              <div style="margin-top:14px">
+                <strong>Tags</strong>
+                <div style="margin-top:7px;color:#68748b;font-size:13px">${escapeHTML(product.tags)}</div>
+              </div>
+            ` : ""}
           </div>
         </div>
       `;
@@ -607,28 +658,123 @@
       document.body.style.overflow = "hidden";
     }
 
-    function addDetailProductToCart(productId){
-      const detailSelect = document.getElementById(`detail-size-${productId}`);
-      const cardSelect = document.getElementById(`size-${productId}`);
+    function updateDetailSize(productId){
+      const product = products.find(p => Number(p.id) === Number(productId));
+      const select = document.getElementById(`detail-size-${productId}`);
+      const priceWrap = document.getElementById(`detail-price-wrap-${productId}`);
+      const stockWrap = document.getElementById(`detail-stock-${productId}`);
+      if(!product || !select || !priceWrap) return;
 
-      if(!detailSelect || !cardSelect) return;
-
-      if(!detailSelect.value){
-        alert("Please select a size first.");
-        detailSelect.focus();
+      const size = select.value;
+      if(!size){
+        const price = typeof getLowestSellingPrice === "function" ? getLowestSellingPrice(product) : Number(product.price || 0);
+        const mrps = Array.isArray(product.sizes) ? product.sizes.filter(s => Number(s.stock || 0) > 0).map(s => Number(s.mrp || 0)).filter(v => v > 0) : [];
+        const mrp = mrps.length ? Math.min(...mrps) : Number(product.mrp || price || 0);
+        const discount = mrp > price ? Math.round(((mrp - price) / mrp) * 100) : 0;
+        priceWrap.innerHTML = `₹${price.toLocaleString("en-IN")}${mrp > price ? ` <del style="color:#68748b;font-size:16px;font-weight:500;margin-left:8px">₹${mrp.toLocaleString("en-IN")}</del><span style="color:#16a34a;font-size:15px;font-weight:700;margin-left:8px">${discount}% OFF</span>` : ""}`;
+        if(stockWrap) stockWrap.textContent = "";
         return;
       }
 
-      cardSelect.value = detailSelect.value;
-      addToCart(productId);
-      closeProductDetail();
+      const selected = Array.isArray(product.sizes) ? product.sizes.find(s => String(s.size) === String(size)) : null;
+      if(!selected) return;
+
+      const price = typeof getSizeSellingPrice === "function" ? getSizeSellingPrice(product,size) : Number(selected.price || product.price || 0);
+      const mrp = typeof getSizeMRP === "function" ? getSizeMRP(product,size) : Number(selected.mrp || product.mrp || price);
+      const discount = typeof getSizeDiscount === "function" ? getSizeDiscount(product,size) : (mrp > price ? Math.round(((mrp-price)/mrp)*100) : 0);
+
+      priceWrap.innerHTML = `₹${price.toLocaleString("en-IN")}${mrp > price ? ` <del style="color:#68748b;font-size:16px;font-weight:500;margin-left:8px">₹${mrp.toLocaleString("en-IN")}</del><span style="color:#16a34a;font-size:15px;font-weight:700;margin-left:8px">${discount}% OFF</span>` : ""}`;
+      if(stockWrap) stockWrap.textContent = `✓ ${Number(selected.stock || 0)} in stock for this size`;
     }
 
-    function closeProductDetail(){
-      const modal = document.getElementById("productDetailModal");
-      if(!modal) return;
-      modal.style.display = "none";
-      document.body.style.overflow = "";
+    function changeDetailQuantity(productId, change){
+      const qtyEl = document.getElementById(`detail-qty-${productId}`);
+      if(!qtyEl) return;
+      let qty = Math.max(1, Number(qtyEl.textContent || 1) + Number(change || 0));
+
+      const product = products.find(p => Number(p.id) === Number(productId));
+      const select = document.getElementById(`detail-size-${productId}`);
+      const selected = product && select && select.value && Array.isArray(product.sizes)
+        ? product.sizes.find(s => String(s.size) === String(select.value))
+        : null;
+
+      if(selected && qty > Number(selected.stock || 0)){
+        qty = Number(selected.stock || 0);
+        if(qty < 1) qty = 1;
+        alert("No more stock available for this size.");
+      }
+
+      qtyEl.textContent = qty;
+    }
+
+    function addDetailProductToCart(productId, closeAfter = true){
+      const product = products.find(p => Number(p.id) === Number(productId));
+      const detailSelect = document.getElementById(`detail-size-${productId}`);
+      const qtyEl = document.getElementById(`detail-qty-${productId}`);
+      if(!product || !detailSelect || !qtyEl) return false;
+
+      const size = detailSelect.value;
+      if(!size){
+        alert("Please select a size first.");
+        detailSelect.focus();
+        return false;
+      }
+
+      const selected = Array.isArray(product.sizes) ? product.sizes.find(s => String(s.size) === String(size)) : null;
+      const quantity = Math.max(1, Number(qtyEl.textContent || 1));
+      const stock = Number(selected?.stock || 0);
+
+      if(!selected || stock <= 0){
+        alert("This size is out of stock.");
+        return false;
+      }
+
+      if(quantity > stock){
+        alert(`Only ${stock} item${stock === 1 ? "" : "s"} available for this size.`);
+        return false;
+      }
+
+      const existing = cart.find(item => Number(item.id) === Number(productId) && String(item.size) === String(size));
+      const existingQty = existing ? Number(existing.quantity || 0) : 0;
+
+      if(existingQty + quantity > stock){
+        alert(`Only ${stock} item${stock === 1 ? "" : "s"} available for this size. You already have ${existingQty} in your cart.`);
+        return false;
+      }
+
+      const price = typeof getSizeSellingPrice === "function" ? getSizeSellingPrice(product,size) : Number(selected.price || product.price || 0);
+      const mrp = typeof getSizeMRP === "function" ? getSizeMRP(product,size) : Number(selected.mrp || product.mrp || price);
+      const discount = typeof getSizeDiscount === "function" ? getSizeDiscount(product,size) : (mrp > price ? Math.round(((mrp-price)/mrp)*100) : 0);
+
+      if(existing){
+        existing.quantity = existingQty + quantity;
+        existing.price = price;
+        existing.mrp = mrp;
+        existing.discount = discount;
+      }else{
+        cart.push({
+          id: product.id,
+          name: product.name,
+          category: product.category,
+          price,
+          mrp,
+          discount,
+          size,
+          quantity,
+          image: product.image
+        });
+      }
+
+      if(typeof saveCart === "function") saveCart();
+      if(typeof updateCartCount === "function") updateCartCount();
+      if(closeAfter) closeProductDetail();
+      return true;
+    }
+
+    function buyNowFromDetail(productId){
+      if(!addDetailProductToCart(productId, false)) return;
+      closeProductDetail();
+      if(typeof placeOrder === "function") placeOrder();
     }
 
     document.addEventListener("click", function(event){
