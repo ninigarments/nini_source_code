@@ -174,6 +174,9 @@ function renderProducts(list) {
     );
 
 
+    const startingPrice = getLowestSellingPrice(product);
+
+
     return `
 
       <article class="product">
@@ -204,7 +207,13 @@ function renderProducts(list) {
             class="price"
             id="price-${product.id}"
           >
-            Select size for price
+
+            ${
+              startingPrice > 0
+                ? `From ₹${startingPrice.toLocaleString("en-IN")}`
+                : "Select size for price"
+            }
+
           </div>
 
 
@@ -322,7 +331,11 @@ function marketSearchProducts(query) {
 
 
     const age =
-      String(product.age || "")
+      String(
+        product.age_group ||
+        product.age ||
+        ""
+      )
         .toLowerCase();
 
 
@@ -445,6 +458,126 @@ function filterCat(category) {
 }
 
 
+/* ---------- SIZE-WISE PRICING HELPERS ---------- */
+
+function getSizeSellingPrice(product, size) {
+
+  if (!product) return 0;
+
+
+  const selectedSize =
+    Array.isArray(product.sizes)
+
+      ? product.sizes.find(
+          s => String(s.size) === String(size)
+        )
+
+      : null;
+
+
+  return Number(
+    selectedSize?.price ??
+    product.price ??
+    0
+  );
+
+}
+
+
+function getSizeMRP(product, size) {
+
+  if (!product) return 0;
+
+
+  const selectedSize =
+    Array.isArray(product.sizes)
+
+      ? product.sizes.find(
+          s => String(s.size) === String(size)
+        )
+
+      : null;
+
+
+  const price =
+    getSizeSellingPrice(product, size);
+
+
+  return Number(
+    selectedSize?.mrp ??
+    product.mrp ??
+    price
+  );
+
+}
+
+
+function getSizeDiscount(product, size) {
+
+  const price =
+    getSizeSellingPrice(product, size);
+
+
+  const mrp =
+    getSizeMRP(product, size);
+
+
+  if (
+    mrp <= 0 ||
+    price >= mrp
+  ) {
+
+    return 0;
+
+  }
+
+
+  return Math.max(
+
+    0,
+
+    Math.round(
+      ((mrp - price) / mrp) * 100
+    )
+
+  );
+
+}
+
+
+function getLowestSellingPrice(product) {
+
+  const prices =
+    Array.isArray(product?.sizes)
+
+      ? product.sizes
+
+          .filter(
+            s =>
+              Number(s.stock || 0) > 0
+          )
+
+          .map(
+            s =>
+              Number(s.price || 0)
+          )
+
+          .filter(
+            p => p > 0
+          )
+
+      : [];
+
+
+  return prices.length
+
+    ? Math.min(...prices)
+
+    : Number(product?.price || 0);
+
+}
+
+
 /* ---------- SORT ---------- */
 
 function sortMarketProducts(type) {
@@ -462,9 +595,9 @@ function sortMarketProducts(type) {
 
         (a, b) =>
 
-          Number(a.price) -
+          getLowestSellingPrice(a) -
 
-          Number(b.price)
+          getLowestSellingPrice(b)
 
       );
 
@@ -477,9 +610,9 @@ function sortMarketProducts(type) {
 
         (a, b) =>
 
-          Number(b.price) -
+          getLowestSellingPrice(b) -
 
-          Number(a.price)
+          getLowestSellingPrice(a)
 
       );
 
@@ -517,72 +650,149 @@ function sortMarketProducts(type) {
 }
 
 
-/* ---------- SIZE-WISE PRICE ---------- */
+/* ---------- SIZE-WISE PRICE DISPLAY ---------- */
 
 function updateSizePrice(productId) {
 
-  const product = products.find(
-    p => Number(p.id) === Number(productId)
-  );
 
-  const priceElement = document.getElementById(
-    `price-${productId}`
-  );
+  const product =
+    products.find(
 
-  if (!product || !priceElement) return;
+      p =>
+        Number(p.id) ===
+        Number(productId)
 
-  const sizeElement = document.getElementById(
-    `size-${productId}`
-  );
+    );
 
-  const selectedSizeValue = sizeElement
-    ? sizeElement.value
-    : "";
+
+  const priceElement =
+    document.getElementById(
+      `price-${productId}`
+    );
+
+
+  if (
+    !product ||
+    !priceElement
+  ) {
+
+    return;
+
+  }
+
+
+  const sizeElement =
+    document.getElementById(
+      `size-${productId}`
+    );
+
+
+  const selectedSizeValue =
+    sizeElement
+      ? sizeElement.value
+      : "";
+
 
   if (!selectedSizeValue) {
-    priceElement.textContent = "Select size for price";
+
+    const startingPrice =
+      getLowestSellingPrice(product);
+
+
+    priceElement.textContent =
+      startingPrice > 0
+
+        ? `From ₹${startingPrice.toLocaleString("en-IN")}`
+
+        : "Select size for price";
+
+
     return;
+
   }
 
-  const selectedSize = Array.isArray(product.sizes)
-    ? product.sizes.find(
-        s => String(s.size) === String(selectedSizeValue)
-      )
-    : null;
+
+  const selectedSize =
+    Array.isArray(product.sizes)
+
+      ? product.sizes.find(
+
+          s =>
+            String(s.size) ===
+            String(selectedSizeValue)
+
+        )
+
+      : null;
+
 
   if (!selectedSize) {
-    priceElement.textContent = "Price unavailable";
+
+    priceElement.textContent =
+      "Price unavailable";
+
     return;
+
   }
 
-  const price = Number(
-    selectedSize.price ?? product.price ?? 0
-  );
 
-  const mrp = Number(
-    selectedSize.mrp ?? product.mrp ?? price
-  );
+  const price =
+    getSizeSellingPrice(
+      product,
+      selectedSizeValue
+    );
+
+
+  const mrp =
+    getSizeMRP(
+      product,
+      selectedSizeValue
+    );
+
 
   const discount =
-    mrp > 0
-      ? Math.max(0, Math.round(((mrp - price) / mrp) * 100))
-      : 0;
+    getSizeDiscount(
+      product,
+      selectedSizeValue
+    );
+
 
   priceElement.innerHTML = `
+
     ₹${price.toLocaleString("en-IN")}
+
     ${
       mrp > price
+
         ? `
-          <del style="margin-left:8px;color:#68748b;font-size:0.9em;">
+
+          <del
+            style="
+              margin-left:8px;
+              color:#68748b;
+              font-size:0.9em;
+            "
+          >
             ₹${mrp.toLocaleString("en-IN")}
           </del>
-          <span style="margin-left:8px;font-size:0.85em;">
+
+          <span
+            style="
+              margin-left:8px;
+              font-size:0.85em;
+            "
+          >
             ${discount}% OFF
           </span>
+
         `
+
         : ""
+
     }
+
   `;
+
 }
 
 
@@ -591,42 +801,39 @@ function updateSizePrice(productId) {
 function addToCart(productId) {
 
 
-  const product = products.find(
+  const product =
+    products.find(
 
-    p =>
+      p =>
 
-      Number(p.id) ===
+        Number(p.id) ===
 
-      Number(productId)
+        Number(productId)
 
-  );
+    );
 
 
   if (!product) return;
 
 
   const sizeElement =
-
     document.getElementById(
-
       `size-${productId}`
-
     );
 
 
   const size =
-
     sizeElement
-
       ? sizeElement.value
-
       : "";
 
 
   if (!size) {
 
 
-    alert("Please select a size first.");
+    alert(
+      "Please select a size first."
+    );
 
 
     if (sizeElement) {
@@ -642,7 +849,6 @@ function addToCart(productId) {
 
 
   const selectedSize =
-
     Array.isArray(product.sizes)
 
       ? product.sizes.find(
@@ -666,24 +872,47 @@ function addToCart(productId) {
 
   ) {
 
-    alert("This size is out of stock.");
+    alert(
+      "This size is out of stock."
+    );
 
     return;
 
   }
 
 
-  const existing = cart.find(
+  const selectedPrice =
+    getSizeSellingPrice(
+      product,
+      size
+    );
 
-    item =>
 
-      Number(item.id) ===
+  const selectedMRP =
+    getSizeMRP(
+      product,
+      size
+    );
 
-        Number(productId) &&
 
-      item.size === size
+  const selectedDiscount =
+    getSizeDiscount(
+      product,
+      size
+    );
 
-  );
+
+  const existing =
+    cart.find(
+
+      item =>
+
+        Number(item.id) ===
+          Number(productId) &&
+
+        item.size === size
+
+    );
 
 
   if (existing) {
@@ -697,7 +926,9 @@ function addToCart(productId) {
 
     ) {
 
-      alert("No more stock available for this size.");
+      alert(
+        "No more stock available for this size."
+      );
 
       return;
 
@@ -707,46 +938,49 @@ function addToCart(productId) {
     existing.quantity += 1;
 
 
+    existing.price =
+      selectedPrice;
+
+
+    existing.mrp =
+      selectedMRP;
+
+
+    existing.discount =
+      selectedDiscount;
+
+
   } else {
 
 
     cart.push({
 
-      id: product.id,
+      id:
+        product.id,
 
-      name: product.name,
+      name:
+        product.name,
 
-      category: product.category,
+      category:
+        product.category,
 
-      price: Number(
-        selectedSize.price ?? product.price ?? 0
-      ),
+      price:
+        selectedPrice,
 
-      mrp: Number(
-        selectedSize.mrp ?? product.mrp ?? product.price ?? 0
-      ),
+      mrp:
+        selectedMRP,
 
       discount:
-        Number(selectedSize.mrp ?? product.mrp ?? 0) > 0
-          ? Math.max(
-              0,
-              Math.round(
-                (
-                  (
-                    Number(selectedSize.mrp ?? product.mrp ?? 0) -
-                    Number(selectedSize.price ?? product.price ?? 0)
-                  ) /
-                  Number(selectedSize.mrp ?? product.mrp ?? 0)
-                ) * 100
-              )
-            )
-          : 0,
+        selectedDiscount,
 
-      size: size,
+      size:
+        size,
 
-      quantity: 1,
+      quantity:
+        1,
 
-      image: product.image
+      image:
+        product.image
 
     });
 
@@ -760,9 +994,7 @@ function addToCart(productId) {
 
 
   alert(
-
     `${product.name} added to cart.`
-
   );
 
 }
@@ -774,31 +1006,32 @@ function updateCartCount() {
 
 
   const countElement =
-
     document.getElementById(
-
       "cartCount"
-
     );
 
 
   if (!countElement) return;
 
 
-  const total = cart.reduce(
+  const total =
+    cart.reduce(
 
-    (sum, item) =>
+      (sum, item) =>
 
-      sum +
+        sum +
 
-      Number(item.quantity || 0),
+        Number(
+          item.quantity || 0
+        ),
 
-    0
+      0
 
-  );
+    );
 
 
-  countElement.textContent = total;
+  countElement.textContent =
+    total;
 
 }
 
@@ -825,11 +1058,8 @@ function openCart() {
 
 
   const modal =
-
     document.getElementById(
-
       "cartModal"
-
     );
 
 
@@ -839,11 +1069,11 @@ function openCart() {
   renderCart();
 
 
-  modal.style.display = "flex";
+  modal.style.display =
+    "flex";
 
 
   document.body.style.overflow =
-
     "hidden";
 
 }
@@ -855,21 +1085,20 @@ function closeCart() {
 
 
   const modal =
-
     document.getElementById(
-
       "cartModal"
-
     );
 
 
   if (!modal) return;
 
 
-  modal.style.display = "none";
+  modal.style.display =
+    "none";
 
 
-  document.body.style.overflow = "";
+  document.body.style.overflow =
+    "";
 
 }
 
@@ -880,20 +1109,14 @@ function renderCart() {
 
 
   const container =
-
     document.getElementById(
-
       "cartItems"
-
     );
 
 
   const totalElement =
-
     document.getElementById(
-
       "cartTotal"
-
     );
 
 
@@ -920,7 +1143,8 @@ function renderCart() {
 
     if (totalElement) {
 
-      totalElement.textContent = "0";
+      totalElement.textContent =
+        "0";
 
     }
 
@@ -932,221 +1156,529 @@ function renderCart() {
 
   container.innerHTML =
 
-    cart.map((item, index) => {
+    cart.map(
+
+      (item, index) => {
 
 
-      const liveProduct = products.find(
-        p => Number(p.id) === Number(item.id)
-      );
+        const liveProduct =
+          products.find(
 
-      const liveSize = Array.isArray(liveProduct?.sizes)
-        ? liveProduct.sizes.find(
-            s => String(s.size) === String(item.size)
+            p =>
+              Number(p.id) ===
+              Number(item.id)
+
+          );
+
+
+        const liveSize =
+          Array.isArray(
+            liveProduct?.sizes
           )
-        : null;
 
-      const itemPrice = Number(
-        item.price ??
-        liveSize?.price ??
-        liveProduct?.price ??
-        0
-      );
+            ? liveProduct.sizes.find(
 
-      const itemMrp = Number(
-        item.mrp ??
-        liveSize?.mrp ??
-        liveProduct?.mrp ??
-        itemPrice
-      );
+                s =>
+                  String(s.size) ===
+                  String(item.size)
 
-      const itemDiscount =
-        itemMrp > 0
-          ? Math.max(
-              0,
-              Math.round(((itemMrp - itemPrice) / itemMrp) * 100)
-            )
-          : 0;
+              )
 
-      const itemQuantity = Number(item.quantity || 0);
-
-      const itemTotal = itemPrice * itemQuantity;
-
-      const itemSavings = Math.max(0, itemMrp - itemPrice) * itemQuantity;
-
-      const itemImage = item.image || liveProduct?.image || "nini-logo.jpeg";
+            : null;
 
 
-      return `
+        const itemPrice =
+          liveSize
+            ? Number(
+                liveSize.price ??
+                liveProduct?.price ??
+                item.price ??
+                0
+              )
+            : Number(
+                item.price ??
+                liveProduct?.price ??
+                0
+              );
 
 
-        <div class="cart-line" style="display:grid;grid-template-columns:64px 1fr auto;gap:12px;align-items:center">
+        const itemMrp =
+          liveSize
+            ? Number(
+                liveSize.mrp ??
+                liveProduct?.mrp ??
+                item.mrp ??
+                itemPrice
+              )
+            : Number(
+                item.mrp ??
+                liveProduct?.mrp ??
+                itemPrice
+              );
 
-          <img
-            src="${escapeHTML(itemImage)}"
-            alt="${escapeHTML(item.name)}"
-            onerror="this.src='nini-logo.jpeg'"
-            style="width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid #eee"
+
+        const itemDiscount =
+          itemMrp > 0
+
+            ? Math.max(
+
+                0,
+
+                Math.round(
+                  ((itemMrp - itemPrice) /
+                    itemMrp) *
+                    100
+                )
+
+              )
+
+            : 0;
+
+
+        const itemQuantity =
+          Number(
+            item.quantity || 0
+          );
+
+
+        const itemTotal =
+          itemPrice *
+          itemQuantity;
+
+
+        const itemSavings =
+          Math.max(
+            0,
+            itemMrp - itemPrice
+          ) *
+          itemQuantity;
+
+
+        const itemImage =
+          item.image ||
+          liveProduct?.image ||
+          "nini-logo.jpeg";
+
+
+        return `
+
+          <div
+            class="cart-line"
+            style="
+              display:grid;
+              grid-template-columns:64px 1fr auto;
+              gap:12px;
+              align-items:center
+            "
           >
 
-          <div>
+            <img
+              src="${escapeHTML(itemImage)}"
+              alt="${escapeHTML(item.name)}"
+              onerror="this.src='nini-logo.jpeg'"
+              style="
+                width:64px;
+                height:64px;
+                object-fit:cover;
+                border-radius:8px;
+                border:1px solid #eee
+              "
+            >
 
-            <strong>${escapeHTML(item.name)}</strong>
 
-            <div style="color:#68748b;margin-top:5px">Size: ${escapeHTML(item.size)}</div>
+            <div>
 
-            <div style="margin-top:5px;font-weight:700">
-              ₹${itemPrice.toLocaleString("en-IN")}
-              ${itemMrp > itemPrice ? `
-                <del style="color:#68748b;font-size:13px;font-weight:500;margin-left:6px">₹${itemMrp.toLocaleString("en-IN")}</del>
-                <span style="color:#16a34a;font-size:12px;font-weight:700;margin-left:6px">${itemDiscount}% OFF</span>
-              ` : ""}
+              <strong>
+                ${escapeHTML(item.name)}
+              </strong>
+
+
+              <div
+                style="
+                  color:#68748b;
+                  margin-top:5px
+                "
+              >
+                Size:
+                ${escapeHTML(item.size)}
+              </div>
+
+
+              <div
+                style="
+                  margin-top:5px;
+                  font-weight:700
+                "
+              >
+
+                ₹${itemPrice.toLocaleString("en-IN")}
+
+                ${
+                  itemMrp > itemPrice
+
+                    ? `
+
+                      <del
+                        style="
+                          color:#68748b;
+                          font-size:13px;
+                          font-weight:500;
+                          margin-left:6px
+                        "
+                      >
+                        ₹${itemMrp.toLocaleString("en-IN")}
+                      </del>
+
+                      <span
+                        style="
+                          color:#16a34a;
+                          font-size:12px;
+                          font-weight:700;
+                          margin-left:6px
+                        "
+                      >
+                        ${itemDiscount}% OFF
+                      </span>
+
+                    `
+
+                    : ""
+
+                }
+
+              </div>
+
+
+              ${
+                itemSavings > 0
+
+                  ? `
+
+                    <div
+                      style="
+                        color:#16a34a;
+                        font-size:12px;
+                        margin-top:3px
+                      "
+                    >
+                      You save
+                      ₹${itemSavings.toLocaleString("en-IN")}
+                    </div>
+
+                  `
+
+                  : ""
+
+              }
+
             </div>
 
-            ${itemSavings > 0 ? `<div style="color:#16a34a;font-size:12px;margin-top:3px">You save ₹${itemSavings.toLocaleString("en-IN")}</div>` : ""}
-
-          </div>
-
-          <div style="text-align:right">
-            <strong>₹${itemTotal.toLocaleString("en-IN")}</strong>
 
             <div
-
-            style="display:flex;gap:8px;align-items:center"
-
-          >
-
-
-            <button
-
-              onclick="changeCartQuantity(${index}, -1)"
-
-              style="border:1px solid #ddd;background:#fff;color:#111;padding:5px 10px;border-radius:4px"
-
+              style="text-align:right"
             >
 
-              −
-
-            </button>
-
-
-            <span>
-
-              ${item.quantity}
-
-            </span>
+              <strong>
+                ₹${itemTotal.toLocaleString("en-IN")}
+              </strong>
 
 
-            <button
-
-              onclick="changeCartQuantity(${index}, 1)"
-
-              style="border:1px solid #ddd;background:#fff;color:#111;padding:5px 10px;border-radius:4px"
-
-            >
-
-              +
-
-            </button>
+              <div
+                style="
+                  display:flex;
+                  gap:8px;
+                  align-items:center
+                "
+              >
 
 
-            <button
+                <button
 
-              onclick="removeFromCart(${index})"
+                  onclick="changeCartQuantity(${index}, -1)"
 
-              style="margin-left:8px"
+                  style="
+                    border:1px solid #ddd;
+                    background:#fff;
+                    color:#111;
+                    padding:5px 10px;
+                    border-radius:4px
+                  "
 
-            >
+                >
 
-              Remove
+                  −
 
-            </button>
+                </button>
+
+
+                <span>
+
+                  ${item.quantity}
+
+                </span>
+
+
+                <button
+
+                  onclick="changeCartQuantity(${index}, 1)"
+
+                  style="
+                    border:1px solid #ddd;
+                    background:#fff;
+                    color:#111;
+                    padding:5px 10px;
+                    border-radius:4px
+                  "
+
+                >
+
+                  +
+
+                </button>
+
+
+                <button
+
+                  onclick="removeFromCart(${index})"
+
+                  style="
+                    margin-left:8px
+                  "
+
+                >
+
+                  Remove
+
+                </button>
+
+
+              </div>
+
+
+            </div>
 
 
           </div>
 
-
-        </div>
-
-      `;
+        `;
 
 
-    }).join("");
+      }
+
+    ).join("");
 
 
-  const total = cart.reduce(
+  const total =
+    cart.reduce(
 
-    (sum, item) =>
-
-      sum +
-
-      Number(item.price || 0) *
-
-      Number(item.quantity || 0),
-
-    0
-
-  );
+      (sum, item) => {
 
 
-  const savings = cart.reduce(
+        const liveProduct =
+          products.find(
 
-    (sum, item) => {
+            p =>
+              Number(p.id) ===
+              Number(item.id)
 
-      const liveProduct = products.find(
-        p => Number(p.id) === Number(item.id)
-      );
+          );
 
-      const liveSize = Array.isArray(liveProduct?.sizes)
-        ? liveProduct.sizes.find(
-            s => String(s.size) === String(item.size)
+
+        const liveSize =
+          Array.isArray(
+            liveProduct?.sizes
           )
-        : null;
 
-      const price = Number(
-        item.price ??
-        liveSize?.price ??
-        liveProduct?.price ??
-        0
-      );
+            ? liveProduct.sizes.find(
 
-      const mrp = Number(
-        item.mrp ??
-        liveSize?.mrp ??
-        liveProduct?.mrp ??
-        price
-      );
+                s =>
+                  String(s.size) ===
+                  String(item.size)
 
-      return (
-        sum +
-        Math.max(0, mrp - price) *
-        Number(item.quantity || 0)
-      );
-    },
+              )
 
-    0
+            : null;
 
-  );
+
+        const price =
+          liveSize
+
+            ? Number(
+                liveSize.price ??
+                liveProduct?.price ??
+                item.price ??
+                0
+              )
+
+            : Number(
+                item.price ??
+                liveProduct?.price ??
+                0
+              );
+
+
+        return (
+
+          sum +
+
+          price *
+
+          Number(
+            item.quantity || 0
+          )
+
+        );
+
+      },
+
+      0
+
+    );
+
+
+  const savings =
+    cart.reduce(
+
+      (sum, item) => {
+
+
+        const liveProduct =
+          products.find(
+
+            p =>
+              Number(p.id) ===
+              Number(item.id)
+
+          );
+
+
+        const liveSize =
+          Array.isArray(
+            liveProduct?.sizes
+          )
+
+            ? liveProduct.sizes.find(
+
+                s =>
+                  String(s.size) ===
+                  String(item.size)
+
+              )
+
+            : null;
+
+
+        const price =
+          liveSize
+
+            ? Number(
+                liveSize.price ??
+                liveProduct?.price ??
+                item.price ??
+                0
+              )
+
+            : Number(
+                item.price ??
+                liveProduct?.price ??
+                0
+              );
+
+
+        const mrp =
+          liveSize
+
+            ? Number(
+                liveSize.mrp ??
+                liveProduct?.mrp ??
+                item.mrp ??
+                price
+              )
+
+            : Number(
+                item.mrp ??
+                liveProduct?.mrp ??
+                price
+              );
+
+
+        return (
+
+          sum +
+
+          Math.max(
+            0,
+            mrp - price
+          ) *
+
+          Number(
+            item.quantity || 0
+          )
+
+        );
+
+      },
+
+      0
+
+    );
 
 
   if (totalElement) {
 
     totalElement.textContent =
-
       total.toLocaleString("en-IN");
 
   }
 
-  const summary = totalElement ? totalElement.closest(".cart-summary") : null;
+
+  const summary =
+    totalElement
+      ? totalElement.closest(
+          ".cart-summary"
+        )
+      : null;
+
 
   if (summary) {
-    let savingsElement = summary.querySelector(".cart-savings");
+
+
+    let savingsElement =
+      summary.querySelector(
+        ".cart-savings"
+      );
+
+
     if (!savingsElement) {
-      savingsElement = document.createElement("div");
-      savingsElement.className = "cart-savings";
-      savingsElement.style.cssText = "color:#16a34a;font-size:13px;font-weight:700;margin-top:6px";
-      summary.appendChild(savingsElement);
+
+      savingsElement =
+        document.createElement(
+          "div"
+        );
+
+
+      savingsElement.className =
+        "cart-savings";
+
+
+      savingsElement.style.cssText =
+        "color:#16a34a;font-size:13px;font-weight:700;margin-top:6px";
+
+
+      summary.appendChild(
+        savingsElement
+      );
+
     }
-    savingsElement.textContent = savings > 0 ? `You save ₹${savings.toLocaleString("en-IN")}` : "";
+
+
+    savingsElement.textContent =
+      savings > 0
+
+        ? `You save ₹${savings.toLocaleString("en-IN")}`
+
+        : "";
+
   }
 
 }
@@ -1154,16 +1686,64 @@ function renderCart() {
 
 /* ---------- CHANGE QUANTITY ---------- */
 
-function changeCartQuantity(index, change) {
+function changeCartQuantity(
+  index,
+  change
+) {
 
 
   if (!cart[index]) return;
 
 
-  cart[index].quantity += change;
+  const liveProduct =
+    products.find(
+
+      p =>
+        Number(p.id) ===
+        Number(cart[index].id)
+
+    );
 
 
-  if (cart[index].quantity <= 0) {
+  const liveSize =
+    Array.isArray(
+      liveProduct?.sizes
+    )
+
+      ? liveProduct.sizes.find(
+
+          s =>
+            String(s.size) ===
+            String(cart[index].size)
+
+        )
+
+      : null;
+
+
+  if (
+    change > 0 &&
+    liveSize &&
+    cart[index].quantity >=
+      Number(liveSize.stock)
+  ) {
+
+    alert(
+      "No more stock available for this size."
+    );
+
+    return;
+
+  }
+
+
+  cart[index].quantity +=
+    change;
+
+
+  if (
+    cart[index].quantity <= 0
+  ) {
 
     cart.splice(index, 1);
 
@@ -1206,201 +1786,1051 @@ function removeFromCart(index) {
 /* ---------- CHECKOUT ---------- */
 
 function placeOrder() {
+
+
   if (cart.length === 0) {
-    alert("Your cart is empty.");
+
+    alert(
+      "Your cart is empty."
+    );
+
     return;
+
   }
+
+
   ensureCheckoutModal();
+
+
   renderCheckout();
-  const modal = document.getElementById("checkoutModal");
-  modal.style.display = "flex";
-  document.body.style.overflow = "hidden";
+
+
+  const modal =
+    document.getElementById(
+      "checkoutModal"
+    );
+
+
+  modal.style.display =
+    "flex";
+
+
+  document.body.style.overflow =
+    "hidden";
+
 }
+
 
 function closeCheckout() {
-  const modal = document.getElementById("checkoutModal");
+
+
+  const modal =
+    document.getElementById(
+      "checkoutModal"
+    );
+
+
   if (!modal) return;
-  modal.style.display = "none";
-  document.body.style.overflow = "";
+
+
+  modal.style.display =
+    "none";
+
+
+  document.body.style.overflow =
+    "";
+
 }
+
 
 function ensureCheckoutModal() {
-  if (document.getElementById("checkoutModal")) return;
-  const modal = document.createElement("div");
-  modal.id = "checkoutModal";
-  modal.className = "cart-modal";
-  modal.onclick = function(event) {
-    if (event.target === modal) closeCheckout();
-  };
+
+
+  if (
+    document.getElementById(
+      "checkoutModal"
+    )
+  ) {
+
+    return;
+
+  }
+
+
+  const modal =
+    document.createElement(
+      "div"
+    );
+
+
+  modal.id =
+    "checkoutModal";
+
+
+  modal.className =
+    "cart-modal";
+
+
+  modal.onclick =
+    function(event) {
+
+      if (
+        event.target ===
+        modal
+      ) {
+
+        closeCheckout();
+
+      }
+
+    };
+
+
   modal.innerHTML = `
-    <div class="cart-panel" style="width:min(560px,calc(100vw - 32px));max-width:560px;max-height:90vh;overflow:auto">
+
+    <div
+      class="cart-panel"
+      style="
+        width:min(560px,calc(100vw - 32px));
+        max-width:560px;
+        max-height:90vh;
+        overflow:auto
+      "
+    >
+
       <div class="cart-header">
-        <div><span class="section-kicker">CHECKOUT</span><h2>Delivery Details</h2></div>
-        <button class="close-cart" type="button" onclick="closeCheckout()">×</button>
+
+        <div>
+
+          <span class="section-kicker">
+            CHECKOUT
+          </span>
+
+          <h2>
+            Delivery Details
+          </h2>
+
+        </div>
+
+
+        <button
+          class="close-cart"
+          type="button"
+          onclick="closeCheckout()"
+        >
+          ×
+        </button>
+
       </div>
-      <form id="checkoutForm" onsubmit="submitCheckout(event)" style="display:grid;gap:14px">
-        <label style="display:flex;flex-direction:column;gap:6px;font-weight:700">Full Name *
-          <input id="checkoutName" required type="text" autocomplete="name" placeholder="Enter your full name" style="width:100%;box-sizing:border-box;padding:11px 12px;border:1px solid #d7dce5;border-radius:7px;font:inherit;font-weight:400">
+
+
+      <form
+        id="checkoutForm"
+        onsubmit="submitCheckout(event)"
+        style="
+          display:grid;
+          gap:14px
+        "
+      >
+
+        <label
+          style="
+            display:flex;
+            flex-direction:column;
+            gap:6px;
+            font-weight:700
+          "
+        >
+
+          Full Name *
+
+          <input
+            id="checkoutName"
+            required
+            type="text"
+            autocomplete="name"
+            placeholder="Enter your full name"
+            style="
+              width:100%;
+              box-sizing:border-box;
+              padding:11px 12px;
+              border:1px solid #d7dce5;
+              border-radius:7px;
+              font:inherit;
+              font-weight:400
+            "
+          >
+
         </label>
-        <label style="display:flex;flex-direction:column;gap:6px;font-weight:700">Mobile Number *
-          <input id="checkoutMobile" required type="tel" inputmode="numeric" maxlength="10" pattern="[6-9][0-9]{9}" autocomplete="tel" placeholder="10-digit mobile number" style="width:100%;box-sizing:border-box;padding:11px 12px;border:1px solid #d7dce5;border-radius:7px;font:inherit;font-weight:400">
+
+
+        <label
+          style="
+            display:flex;
+            flex-direction:column;
+            gap:6px;
+            font-weight:700
+          "
+        >
+
+          Mobile Number *
+
+          <input
+            id="checkoutMobile"
+            required
+            type="tel"
+            inputmode="numeric"
+            maxlength="10"
+            pattern="[6-9][0-9]{9}"
+            autocomplete="tel"
+            placeholder="10-digit mobile number"
+            style="
+              width:100%;
+              box-sizing:border-box;
+              padding:11px 12px;
+              border:1px solid #d7dce5;
+              border-radius:7px;
+              font:inherit;
+              font-weight:400
+            "
+          >
+
         </label>
-        <label style="display:flex;flex-direction:column;gap:6px;font-weight:700">Full Address *
-          <textarea id="checkoutAddress" required rows="3" autocomplete="street-address" placeholder="House no., street, locality" style="width:100%;box-sizing:border-box;padding:11px 12px;border:1px solid #d7dce5;border-radius:7px;font:inherit;font-weight:400;resize:vertical"></textarea>
+
+
+        <label
+          style="
+            display:flex;
+            flex-direction:column;
+            gap:6px;
+            font-weight:700
+          "
+        >
+
+          Full Address *
+
+          <textarea
+            id="checkoutAddress"
+            required
+            rows="3"
+            autocomplete="street-address"
+            placeholder="House no., street, locality"
+            style="
+              width:100%;
+              box-sizing:border-box;
+              padding:11px 12px;
+              border:1px solid #d7dce5;
+              border-radius:7px;
+              font:inherit;
+              font-weight:400;
+              resize:vertical
+            "
+          ></textarea>
+
         </label>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-          <label style="display:flex;flex-direction:column;gap:6px;font-weight:700">City *
-            <input id="checkoutCity" required type="text" autocomplete="address-level2" placeholder="City" style="width:100%;box-sizing:border-box;padding:11px 12px;border:1px solid #d7dce5;border-radius:7px;font:inherit;font-weight:400">
+
+
+        <div
+          style="
+            display:grid;
+            grid-template-columns:1fr 1fr;
+            gap:12px
+          "
+        >
+
+          <label
+            style="
+              display:flex;
+              flex-direction:column;
+              gap:6px;
+              font-weight:700
+            "
+          >
+
+            City *
+
+            <input
+              id="checkoutCity"
+              required
+              type="text"
+              autocomplete="address-level2"
+              placeholder="City"
+              style="
+                width:100%;
+                box-sizing:border-box;
+                padding:11px 12px;
+                border:1px solid #d7dce5;
+                border-radius:7px;
+                font:inherit;
+                font-weight:400
+              "
+            >
+
           </label>
-          <label style="display:flex;flex-direction:column;gap:6px;font-weight:700">State *
-            <input id="checkoutState" required type="text" autocomplete="address-level1" placeholder="State" style="width:100%;box-sizing:border-box;padding:11px 12px;border:1px solid #d7dce5;border-radius:7px;font:inherit;font-weight:400">
+
+
+          <label
+            style="
+              display:flex;
+              flex-direction:column;
+              gap:6px;
+              font-weight:700
+            "
+          >
+
+            State *
+
+            <input
+              id="checkoutState"
+              required
+              type="text"
+              autocomplete="address-level1"
+              placeholder="State"
+              style="
+                width:100%;
+                box-sizing:border-box;
+                padding:11px 12px;
+                border:1px solid #d7dce5;
+                border-radius:7px;
+                font:inherit;
+                font-weight:400
+              "
+            >
+
           </label>
+
         </div>
-        <label style="display:flex;flex-direction:column;gap:6px;font-weight:700">PIN Code *
-          <input id="checkoutPin" required type="text" inputmode="numeric" maxlength="6" pattern="[0-9]{6}" autocomplete="postal-code" placeholder="6-digit PIN code" style="width:100%;box-sizing:border-box;padding:11px 12px;border:1px solid #d7dce5;border-radius:7px;font:inherit;font-weight:400">
+
+
+        <label
+          style="
+            display:flex;
+            flex-direction:column;
+            gap:6px;
+            font-weight:700
+          "
+        >
+
+          PIN Code *
+
+          <input
+            id="checkoutPin"
+            required
+            type="text"
+            inputmode="numeric"
+            maxlength="6"
+            pattern="[0-9]{6}"
+            autocomplete="postal-code"
+            placeholder="6-digit PIN code"
+            style="
+              width:100%;
+              box-sizing:border-box;
+              padding:11px 12px;
+              border:1px solid #d7dce5;
+              border-radius:7px;
+              font:inherit;
+              font-weight:400
+            "
+          >
+
         </label>
-        <div style="background:#f7f8fa;border-radius:10px;padding:14px">
-          <strong>Order Summary</strong>
-          <div id="checkoutSummary" style="margin-top:10px"></div>
+
+
+        <div
+          style="
+            background:#f7f8fa;
+            border-radius:10px;
+            padding:14px
+          "
+        >
+
+          <strong>
+            Order Summary
+          </strong>
+
+          <div
+            id="checkoutSummary"
+            style="margin-top:10px"
+          ></div>
+
         </div>
-        <button type="submit" class="market-btn primary">Confirm Order →</button>
+
+
+        <button
+          type="submit"
+          class="market-btn primary"
+        >
+          Confirm Order →
+        </button>
+
       </form>
+
     </div>
+
   `;
-  document.body.appendChild(modal);
-  const style = document.createElement("style");
-  style.textContent = `@media (max-width:600px){#checkoutForm > div[style*="grid-template-columns"]{grid-template-columns:1fr !important}}`;
-  document.head.appendChild(style);
-}
 
-function renderCheckout() {
-  const summary = document.getElementById("checkoutSummary");
-  const total = cart.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0), 0);
-  if (summary) {
-    summary.innerHTML = cart.map(item => `
-      <div style="display:flex;justify-content:space-between;gap:10px;margin-bottom:8px">
-        <span>${escapeHTML(item.name)} × ${item.quantity}<small style="display:block;color:#68748b">Size: ${escapeHTML(item.size)}</small></span>
-        <strong>₹${(Number(item.price || 0) * Number(item.quantity || 0)).toLocaleString("en-IN")}</strong>
-      </div>
-    `).join("") + `<hr><div style="display:flex;justify-content:space-between;font-size:18px"><strong>Total</strong><strong>₹${total.toLocaleString("en-IN")}</strong></div>`;
-  }
-}
 
-async function submitCheckout(event) {
-  event.preventDefault();
-
-  const form = document.getElementById("checkoutForm");
-  if (!form || !form.reportValidity()) return;
-
-  if (!cart.length) {
-    alert("Your cart is empty.");
-    closeCheckout();
-    return;
-  }
-
-  const user = JSON.parse(localStorage.getItem("nini_user") || "null");
-  if (!user || !user.id) {
-    alert("Please login before placing your order.");
-    closeCheckout();
-    if (typeof openAccount === "function") openAccount();
-    return;
-  }
-
-  const mobile = document.getElementById("checkoutMobile").value.trim();
-  const pin = document.getElementById("checkoutPin").value.trim();
-  const fullName = document.getElementById("checkoutName").value.trim();
-  const address = document.getElementById("checkoutAddress").value.trim();
-  const city = document.getElementById("checkoutCity").value.trim();
-  const state = document.getElementById("checkoutState").value.trim();
-
-  if (!/^[6-9]\d{9}$/.test(mobile)) {
-    alert("Please enter a valid 10-digit mobile number.");
-    return;
-  }
-
-  if (!/^\d{6}$/.test(pin)) {
-    alert("Please enter a valid 6-digit PIN code.");
-    return;
-  }
-
-  const total = cart.reduce(
-    (sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0),
-    0
+  document.body.appendChild(
+    modal
   );
 
-  const items = cart.map(item => ({
-    product_id: Number(item.id),
-    size: String(item.size || "").trim(),
-    quantity: Number(item.quantity || 0),
-    price: Number(item.price || 0)
-  }));
 
-  const submitButton = form.querySelector('button[type="submit"]');
-  if (submitButton) {
-    submitButton.disabled = true;
-    submitButton.textContent = "Placing Order...";
-  }
+  const style =
+    document.createElement(
+      "style"
+    );
 
-  try {
-    const response = await fetch(`${API_URL}/api/orders`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        user_id: Number(user.id),
-        full_name: fullName,
-        mobile,
-        address,
-        city,
-        state,
-        pin_code: pin,
-        total_amount: total,
-        items
-      })
-    });
 
-    const data = await response.json();
+  style.textContent = `
 
-    if (!response.ok || !data.success) {
-      alert(data.error || "Unable to place order. Please try again.");
-      return;
+    @media (max-width:600px){
+
+      #checkoutForm > div[style*="grid-template-columns"]{
+
+        grid-template-columns:
+          1fr !important;
+
+      }
+
     }
 
-    cart = [];
-    saveCart();
-    updateCartCount();
-    closeCheckout();
-    closeCart();
+  `;
 
-    alert(`Order placed successfully!\n\nOrder ID: #${data.order_id}`);
-  } catch (error) {
-    console.error("Nini order submission error:", error);
-    alert("Unable to connect to the server. Please try again.");
-  } finally {
-    if (submitButton) {
-      submitButton.disabled = false;
-      submitButton.textContent = "Confirm Order →";
-    }
-  }
+
+  document.head.appendChild(
+    style
+  );
+
 }
 
+
+function renderCheckout() {
+
+
+  const summary =
+    document.getElementById(
+      "checkoutSummary"
+    );
+
+
+  const total =
+    cart.reduce(
+
+      (sum, item) => {
+
+
+        const liveProduct =
+          products.find(
+
+            p =>
+              Number(p.id) ===
+              Number(item.id)
+
+          );
+
+
+        const price =
+          liveProduct
+
+            ? getSizeSellingPrice(
+                liveProduct,
+                item.size
+              )
+
+            : Number(
+                item.price || 0
+              );
+
+
+        return (
+
+          sum +
+
+          price *
+
+          Number(
+            item.quantity || 0
+          )
+
+        );
+
+      },
+
+      0
+
+    );
+
+
+  if (summary) {
+
+
+    summary.innerHTML =
+
+      cart.map(
+
+        item => {
+
+
+          const liveProduct =
+            products.find(
+
+              p =>
+                Number(p.id) ===
+                Number(item.id)
+
+            );
+
+
+          const price =
+            liveProduct
+
+              ? getSizeSellingPrice(
+                  liveProduct,
+                  item.size
+                )
+
+              : Number(
+                  item.price || 0
+                );
+
+
+          const mrp =
+            liveProduct
+
+              ? getSizeMRP(
+                  liveProduct,
+                  item.size
+                )
+
+              : Number(
+                  item.mrp ||
+                  price
+                );
+
+
+          const discount =
+            liveProduct
+
+              ? getSizeDiscount(
+                  liveProduct,
+                  item.size
+                )
+
+              : 0;
+
+
+          return `
+
+            <div
+              style="
+                display:flex;
+                justify-content:space-between;
+                gap:10px;
+                margin-bottom:8px
+              "
+            >
+
+              <span>
+
+                ${escapeHTML(item.name)}
+                × ${item.quantity}
+
+                <small
+                  style="
+                    display:block;
+                    color:#68748b
+                  "
+                >
+                  Size:
+                  ${escapeHTML(item.size)}
+                </small>
+
+              </span>
+
+
+              <strong>
+
+                ₹${(
+                  price *
+                  Number(item.quantity || 0)
+                ).toLocaleString("en-IN")}
+
+                ${
+                  mrp > price
+
+                    ? `
+
+                      <small
+                        style="
+                          display:block;
+                          color:#16a34a;
+                          font-weight:700
+                        "
+                      >
+                        ${discount}% OFF
+                      </small>
+
+                    `
+
+                    : ""
+
+                }
+
+              </strong>
+
+            </div>
+
+          `;
+
+        }
+
+      ).join("")
+
+      +
+
+      `
+
+        <hr>
+
+        <div
+          style="
+            display:flex;
+            justify-content:space-between;
+            font-size:18px
+          "
+        >
+
+          <strong>
+            Total
+          </strong>
+
+          <strong>
+            ₹${total.toLocaleString("en-IN")}
+          </strong>
+
+        </div>
+
+      `;
+
+  }
+
+}
+
+
+async function submitCheckout(event) {
+
+
+  event.preventDefault();
+
+
+  const form =
+    document.getElementById(
+      "checkoutForm"
+    );
+
+
+  if (
+    !form ||
+    !form.reportValidity()
+  ) {
+
+    return;
+
+  }
+
+
+  if (!cart.length) {
+
+    alert(
+      "Your cart is empty."
+    );
+
+    closeCheckout();
+
+    return;
+
+  }
+
+
+  const user =
+    JSON.parse(
+      localStorage.getItem(
+        "nini_user"
+      ) || "null"
+    );
+
+
+  if (
+    !user ||
+    !user.id
+  ) {
+
+    alert(
+      "Please login before placing your order."
+    );
+
+
+    closeCheckout();
+
+
+    if (
+      typeof openAccount ===
+      "function"
+    ) {
+
+      openAccount();
+
+    }
+
+
+    return;
+
+  }
+
+
+  const mobile =
+    document.getElementById(
+      "checkoutMobile"
+    ).value.trim();
+
+
+  const pin =
+    document.getElementById(
+      "checkoutPin"
+    ).value.trim();
+
+
+  const fullName =
+    document.getElementById(
+      "checkoutName"
+    ).value.trim();
+
+
+  const address =
+    document.getElementById(
+      "checkoutAddress"
+    ).value.trim();
+
+
+  const city =
+    document.getElementById(
+      "checkoutCity"
+    ).value.trim();
+
+
+  const state =
+    document.getElementById(
+      "checkoutState"
+    ).value.trim();
+
+
+  if (
+    !/^[6-9]\d{9}$/.test(
+      mobile
+    )
+  ) {
+
+    alert(
+      "Please enter a valid 10-digit mobile number."
+    );
+
+    return;
+
+  }
+
+
+  if (
+    !/^\d{6}$/.test(
+      pin
+    )
+  ) {
+
+    alert(
+      "Please enter a valid 6-digit PIN code."
+    );
+
+    return;
+
+  }
+
+
+  const total =
+    cart.reduce(
+
+      (sum, item) => {
+
+
+        const liveProduct =
+          products.find(
+
+            p =>
+              Number(p.id) ===
+              Number(item.id)
+
+          );
+
+
+        const price =
+          liveProduct
+
+            ? getSizeSellingPrice(
+                liveProduct,
+                item.size
+              )
+
+            : Number(
+                item.price || 0
+              );
+
+
+        return (
+
+          sum +
+
+          price *
+
+          Number(
+            item.quantity || 0
+          )
+
+        );
+
+      },
+
+      0
+
+    );
+
+
+  const items =
+    cart.map(
+
+      item => {
+
+
+        const liveProduct =
+          products.find(
+
+            p =>
+              Number(p.id) ===
+              Number(item.id)
+
+          );
+
+
+        const livePrice =
+          liveProduct
+
+            ? getSizeSellingPrice(
+                liveProduct,
+                item.size
+              )
+
+            : Number(
+                item.price || 0
+              );
+
+
+        return {
+
+          product_id:
+            Number(item.id),
+
+          size:
+            String(
+              item.size || ""
+            ).trim(),
+
+          quantity:
+            Number(
+              item.quantity || 0
+            ),
+
+          price:
+            livePrice
+
+        };
+
+      }
+
+    );
+
+
+  const submitButton =
+    form.querySelector(
+      'button[type="submit"]'
+    );
+
+
+  if (submitButton) {
+
+    submitButton.disabled =
+      true;
+
+
+    submitButton.textContent =
+      "Placing Order...";
+
+  }
+
+
+  try {
+
+
+    const response =
+      await fetch(
+        `${API_URL}/api/orders`,
+        {
+
+          method:
+            "POST",
+
+          headers:
+            {
+              "Content-Type":
+                "application/json"
+            },
+
+          body:
+            JSON.stringify({
+
+              user_id:
+                Number(user.id),
+
+              full_name:
+                fullName,
+
+              mobile,
+
+              address,
+
+              city,
+
+              state,
+
+              pin_code:
+                pin,
+
+              total_amount:
+                total,
+
+              items
+
+            })
+
+        }
+
+      );
+
+
+    const data =
+      await response.json();
+
+
+    if (
+      !response.ok ||
+      !data.success
+    ) {
+
+      alert(
+        data.error ||
+        "Unable to place order. Please try again."
+      );
+
+      return;
+
+    }
+
+
+    cart = [];
+
+
+    saveCart();
+
+
+    updateCartCount();
+
+
+    closeCheckout();
+
+
+    closeCart();
+
+
+    alert(
+      `Order placed successfully!\n\nOrder ID: #${data.order_id}`
+    );
+
+
+  } catch (error) {
+
+
+    console.error(
+      "Nini order submission error:",
+      error
+    );
+
+
+    alert(
+      "Unable to connect to the server. Please try again."
+    );
+
+
+  } finally {
+
+
+    if (submitButton) {
+
+      submitButton.disabled =
+        false;
+
+
+      submitButton.textContent =
+        "Confirm Order →";
+
+    }
+
+  }
+
+}
+
+
 /* ---------- PLACE ORDER (legacy entry point) ---------- */
+
 
 /* ---------- ESCAPE HTML ---------- */
 
 function escapeHTML(value) {
 
 
-  return String(value ?? "")
+  return String(
+    value ?? ""
+  )
 
-    .replace(/&/g, "&amp;")
+    .replace(
+      /&/g,
+      "&amp;"
+    )
 
-    .replace(/</g, "&lt;")
+    .replace(
+      /</g,
+      "&lt;"
+    )
 
-    .replace(/>/g, "&gt;")
+    .replace(
+      />/g,
+      "&gt;"
+    )
 
-    .replace(/"/g, "&quot;")
+    .replace(
+      /"/g,
+      "&quot;"
+    )
 
-    .replace(/'/g, "&#039;");
+    .replace(
+      /'/g,
+      "&#039;"
+    );
 
 }
 
@@ -1414,9 +2844,14 @@ document.addEventListener(
   function (event) {
 
 
-    if (event.key === "Escape") {
+    if (
+      event.key ===
+      "Escape"
+    ) {
 
       closeCart();
+
+      closeCheckout();
 
     }
 
