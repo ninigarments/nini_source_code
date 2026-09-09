@@ -538,7 +538,11 @@
       renderProducts(copy);
     }
 
-    function openProductDetail(productId){ window.location.href = "product.html?id=" + encodeURIComponent(Number(productId)); }
+    function openProductDetail(productId){
+      const id = Number(productId);
+      if(!Number.isFinite(id)) return;
+      window.location.href = "product.html?id=" + encodeURIComponent(id);
+    }
 
     function updateDetailSize(productId){
       const product = products.find(p => Number(p.id) === Number(productId));
