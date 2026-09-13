@@ -2066,6 +2066,8 @@ function removeFromCart(index) {
 
 /* ---------- CHECKOUT ---------- */
 
+let checkoutPaymentMethod = "cod";
+
 function placeOrder() {
 
   if (cart.length === 0) {
@@ -2078,6 +2080,14 @@ function placeOrder() {
   }
 
   ensureCheckoutModal();
+
+  checkoutPaymentMethod = "cod";
+
+  const codRadio = document.querySelector(
+    '#checkoutForm input[name="checkoutPaymentMethod"][value="cod"]'
+  );
+
+  if (codRadio) codRadio.checked = true;
 
   renderCheckout();
 
@@ -2377,7 +2387,42 @@ function ensureCheckoutModal() {
           "
         >
 
+          <div
+          style="
+            display:grid;
+            gap:8px;
+            padding:14px;
+            border:1px solid #d7dce5;
+            border-radius:10px
+          "
+        >
           <strong>
+            Payment Method
+          </strong>
+
+          <label style="display:flex;align-items:center;gap:8px;font-weight:400">
+            <input
+              type="radio"
+              name="checkoutPaymentMethod"
+              value="cod"
+              checked
+              onchange="selectCheckoutPaymentMethod(this.value)"
+            >
+            Cash on Delivery
+          </label>
+
+          <label style="display:flex;align-items:center;gap:8px;font-weight:400">
+            <input
+              type="radio"
+              name="checkoutPaymentMethod"
+              value="online"
+              onchange="selectCheckoutPaymentMethod(this.value)"
+            >
+            Online Payment
+          </label>
+        </div>
+
+        <strong>
             Order Summary
           </strong>
 
@@ -2423,6 +2468,21 @@ function ensureCheckoutModal() {
   document.head.appendChild(
     style
   );
+}
+
+function selectCheckoutPaymentMethod(method) {
+  checkoutPaymentMethod = method === "online" ? "online" : "cod";
+
+  const submitButton = document.querySelector(
+    '#checkoutForm button[type="submit"]'
+  );
+
+  if (submitButton) {
+    submitButton.textContent =
+      checkoutPaymentMethod === "online"
+        ? "Continue to Payment →"
+        : "Confirm Order →";
+  }
 }
 
 function renderCheckout() {
@@ -2754,7 +2814,7 @@ async function submitCheckout(
 
     const response =
       await fetch(
-        `${API_URL}/api/orders`,
+        `${API_URL}/api/orders/v2`,
         {
           method: "POST",
 
@@ -2786,6 +2846,9 @@ async function submitCheckout(
               total_amount:
                 total,
 
+              payment_method:
+                checkoutPaymentMethod,
+
               items
 
             })
@@ -2804,6 +2867,105 @@ async function submitCheckout(
         data.error ||
         "Unable to place order. Please try again."
       );
+
+      return;
+    }
+
+    if (checkoutPaymentMethod === "online") {
+      if (!data.razorpay_order_id || !data.razorpay_key_id) {
+        alert(
+          "Online payment details were not returned by the server."
+        );
+        return;
+      }
+
+      const loadRazorpayScript = () =>
+        new Promise((resolve, reject) => {
+          if (window.Razorpay) {
+            resolve();
+            return;
+          }
+
+          const script = document.createElement("script");
+          script.src = "https://checkout.razorpay.com/v1/checkout.js";
+          script.onload = resolve;
+          script.onerror = reject;
+          document.head.appendChild(script);
+        });
+
+      await loadRazorpayScript();
+
+      await new Promise((resolve) => {
+        const razorpay = new Razorpay({
+          key: data.razorpay_key_id,
+          amount: Math.round(Number(data.total_amount || total) * 100),
+          currency: "INR",
+          name: "Nini Garments",
+          description: "Nini Garments Order",
+          order_id: data.razorpay_order_id,
+          prefill: {
+            name: fullName,
+            contact: mobile
+          },
+          handler: async function(paymentResponse) {
+            try {
+              const verifyResponse = await fetch(
+                `${API_URL}/api/payments/verify`,
+                {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json"
+                  },
+                  body: JSON.stringify({
+                    order_id: Number(data.order_id),
+                    razorpay_order_id:
+                      paymentResponse.razorpay_order_id,
+                    razorpay_payment_id:
+                      paymentResponse.razorpay_payment_id,
+                    razorpay_signature:
+                      paymentResponse.razorpay_signature
+                  })
+                }
+              );
+
+              const verifyData = await verifyResponse.json();
+
+              if (!verifyResponse.ok || !verifyData.success) {
+                alert(
+                  verifyData.error ||
+                  "Payment verification failed. Please contact support."
+                );
+                return;
+              }
+
+              cart = [];
+              saveCart();
+              updateCartCount();
+              closeCheckout();
+              closeCart();
+
+              alert(
+                `Payment successful!\n\nOrder ID: #${data.order_id}`
+              );
+            } catch (verificationError) {
+              console.error(
+                "Nini payment verification error:",
+                verificationError
+              );
+              alert(
+                "Payment was received, but verification could not be completed. Please contact support."
+              );
+            } finally {
+              resolve();
+            }
+          },
+          modal: {
+            ondismiss: resolve
+          }
+        });
+
+        razorpay.open();
+      });
 
       return;
     }
