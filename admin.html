@@ -539,19 +539,51 @@ h1,h2,h3{margin-top:0}
       <input id="productSku" type="text" placeholder="Example: NG-HOOD-001">
     </div>
     <div class="field">
-      <label>Product Image URL</label>
-      <input id="productImage" type="url" placeholder="https://...">
+      <label>Product Images</label>
+      <p class="meta">Front, back aur additional product images upload karo. Har image Cloudflare R2 mein save hogi.</p>
 
       <div class="image-upload-box">
-        <strong>Upload Product Image to Cloudflare R2</strong>
+        <strong>Front Image *</strong>
+        <input id="productImageFront" type="url" placeholder="Front image URL (optional)" style="width:100%;margin-top:10px;padding:10px;border:1px solid #d9deea;border-radius:8px">
         <div class="image-upload-row" style="margin-top:10px">
-          <input id="productImageFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif">
-          <button id="uploadImageBtn" class="btn secondary" type="button">Upload Image</button>
+          <input id="productImageFrontFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif">
+          <button id="uploadImageFrontBtn" class="btn secondary" type="button">Upload Front</button>
         </div>
-        <div id="uploadStatus" class="upload-status">
-          Maximum file size: 5 MB. Supported: JPG, PNG, WEBP, GIF.
+        <div id="uploadStatusFront" class="upload-status">Maximum 5 MB. JPG, PNG, WEBP or GIF.</div>
+        <img id="imagePreviewFront" class="image-preview" alt="Front image preview">
+      </div>
+
+      <div class="image-upload-box">
+        <strong>Back Image</strong>
+        <input id="productImageBack" type="url" placeholder="Back image URL (optional)" style="width:100%;margin-top:10px;padding:10px;border:1px solid #d9deea;border-radius:8px">
+        <div class="image-upload-row" style="margin-top:10px">
+          <input id="productImageBackFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif">
+          <button id="uploadImageBackBtn" class="btn secondary" type="button">Upload Back</button>
         </div>
-        <img id="imagePreview" class="image-preview" alt="Selected product image preview">
+        <div id="uploadStatusBack" class="upload-status">Optional second image.</div>
+        <img id="imagePreviewBack" class="image-preview" alt="Back image preview">
+      </div>
+
+      <div class="image-upload-box">
+        <strong>Additional Image</strong>
+        <input id="productImageAdditional" type="url" placeholder="Additional image URL (optional)" style="width:100%;margin-top:10px;padding:10px;border:1px solid #d9deea;border-radius:8px">
+        <div class="image-upload-row" style="margin-top:10px">
+          <input id="productImageAdditionalFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif">
+          <button id="uploadImageAdditionalBtn" class="btn secondary" type="button">Upload Additional</button>
+        </div>
+        <div id="uploadStatusAdditional" class="upload-status">Optional third image.</div>
+        <img id="imagePreviewAdditional" class="image-preview" alt="Additional image preview">
+      </div>
+
+      <div class="image-upload-box">
+        <strong>Extra Image</strong>
+        <input id="productImageExtra" type="url" placeholder="Extra image URL (optional)" style="width:100%;margin-top:10px;padding:10px;border:1px solid #d9deea;border-radius:8px">
+        <div class="image-upload-row" style="margin-top:10px">
+          <input id="productImageExtraFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif">
+          <button id="uploadImageExtraBtn" class="btn secondary" type="button">Upload Extra</button>
+        </div>
+        <div id="uploadStatusExtra" class="upload-status">Optional fourth image.</div>
+        <img id="imagePreviewExtra" class="image-preview" alt="Extra image preview">
       </div>
     </div>
 
@@ -661,11 +693,17 @@ function resetForm(){
   $("discountDisplay").textContent = "0% OFF";
   $("productAgeGroup").value = "";
   $("productSku").value = "";
-  $("productImage").value = "";
-  $("productImageFile").value = "";
-  $("imagePreview").removeAttribute("src");
-  $("imagePreview").style.display = "none";
-  $("uploadStatus").textContent = "Maximum file size: 5 MB. Supported: JPG, PNG, WEBP, GIF."; 
+  ["Front","Back","Additional","Extra"].forEach(slot=>{
+    const key = slot.charAt(0).toLowerCase()+slot.slice(1);
+    $("productImage"+slot).value = "";
+    $("productImage"+slot+"File").value = "";
+    $("imagePreview"+slot).removeAttribute("src");
+    $("imagePreview"+slot).style.display = "none";
+    $("uploadStatus"+slot).textContent =
+      slot === "Front"
+        ? "Maximum 5 MB. JPG, PNG, WEBP or GIF."
+        : "Optional image.";
+  });
   $("productDescription").value = "";
   $("productFeatured").checked = false;
   $("productNewArrival").checked = false;
@@ -907,8 +945,9 @@ function renderProducts(){
       ? sizes.map(s=>`${s.size}: ${s.stock}`).join(" • ")
       : "No sizes added";
 
-    const image = product.image
-      ? `<img src="${escapeHtml(product.image)}"
+    const imageUrl = product.image_front || product.image;
+    const image = imageUrl
+      ? `<img src="${escapeHtml(imageUrl)}"
           alt="${escapeHtml(product.name)}"
           onerror="this.style.display='none';this.nextElementSibling.style.display='block'">`
       : "";
@@ -918,7 +957,7 @@ function renderProducts(){
 
         <div class="product-img">
           ${image}
-          <div class="no-image" style="${product.image ? "display:none" : ""}">
+          <div class="no-image" style="${imageUrl ? "display:none" : ""}">
             No Image
           </div>
         </div>
@@ -1010,16 +1049,25 @@ function editProduct(id){
   $("productPrice").value = product.price ?? "";
   $("productAgeGroup").value = product.age_group || "";
   $("productSku").value = product.sku || "";
-  $("productImage").value = product.image || "";
-  $("productImageFile").value = "";
-  if(product.image){
-    $("imagePreview").src = product.image;
-    $("imagePreview").style.display = "block";
-    $("uploadStatus").textContent = "Existing product image loaded.";
-  }else{
-    $("imagePreview").removeAttribute("src");
-    $("imagePreview").style.display = "none";
-  }
+  const imageValues = {
+    Front: product.image_front || product.image || "",
+    Back: product.image_back || "",
+    Additional: product.image_additional || "",
+    Extra: product.image_extra || ""
+  };
+
+  ["Front","Back","Additional","Extra"].forEach(slot=>{
+    $("productImage"+slot).value = imageValues[slot];
+    $("productImage"+slot+"File").value = "";
+    if(imageValues[slot]){
+      $("imagePreview"+slot).src = imageValues[slot];
+      $("imagePreview"+slot).style.display = "block";
+      $("uploadStatus"+slot).textContent = "Existing image loaded.";
+    }else{
+      $("imagePreview"+slot).removeAttribute("src");
+      $("imagePreview"+slot).style.display = "none";
+    }
+  });
   $("productDescription").value = product.description || "";
   $("productFeatured").checked = Number(product.featured || 0) === 1;
   $("productNewArrival").checked = Number(product.new_arrival || 0) === 1;
@@ -1106,8 +1154,8 @@ function collectSizes(){
   return sizes;
 }
 
-async function uploadProductImage(){
-  const fileInput = $("productImageFile");
+async function uploadProductImage(slot){
+  const fileInput = $("productImage"+slot+"File");
   const file = fileInput.files && fileInput.files[0];
 
   if(!file){
@@ -1123,10 +1171,10 @@ async function uploadProductImage(){
     return;
   }
 
-  const button = $("uploadImageBtn");
+  const button = $("uploadImage"+slot+"Btn");
   button.disabled = true;
   button.textContent = "Uploading...";
-  $("uploadStatus").textContent = "Uploading image to Cloudflare R2...";
+  $("uploadStatus"+slot).textContent = "Uploading image to Cloudflare R2...";
 
   try{
     const formData = new FormData();
@@ -1147,23 +1195,24 @@ async function uploadProductImage(){
       throw new Error("Upload succeeded but image URL was not returned.");
     }
 
-    $("productImage").value = data.image_url;
-    $("imagePreview").src = data.image_url;
-    $("imagePreview").style.display = "block";
-    $("uploadStatus").textContent = "Image uploaded successfully. URL automatically set ho gaya hai.";
-    showMessage("formMessage","Image uploaded successfully.","success");
+    $("productImage"+slot).value = data.image_url;
+    $("imagePreview"+slot).src = data.image_url;
+    $("imagePreview"+slot).style.display = "block";
+    $("uploadStatus"+slot).textContent = "Image uploaded successfully.";
+    showMessage("formMessage",slot+" image uploaded successfully.","success");
   }catch(error){
-    $("uploadStatus").textContent = "Upload failed.";
+    $("uploadStatus"+slot).textContent = "Upload failed.";
     showMessage("formMessage",error.message,"error");
   }finally{
     button.disabled = false;
-    button.textContent = "Upload Image";
+    button.textContent = "Upload "+slot;
   }
 }
 
-function previewSelectedProductImage(){
-  const file = $("productImageFile").files && $("productImageFile").files[0];
-  const preview = $("imagePreview");
+
+function previewSelectedProductImage(slot){
+  const file = $("productImage"+slot+"File").files && $("productImage"+slot+"File").files[0];
+  const preview = $("imagePreview"+slot);
   if(!file){
     preview.removeAttribute("src");
     preview.style.display = "none";
@@ -1171,8 +1220,9 @@ function previewSelectedProductImage(){
   }
   preview.src = URL.createObjectURL(file);
   preview.style.display = "block";
-  $("uploadStatus").textContent = "Image selected. Click Upload Image to save it in R2.";
+  $("uploadStatus"+slot).textContent = "Image selected. Click Upload "+slot+" to save it in R2.";
 }
+
 
 async function saveProduct(){
 
@@ -1182,7 +1232,11 @@ async function saveProduct(){
   const price = Number($("productPrice").value);
   const age_group = $("productAgeGroup").value;
   const sku = $("productSku").value.trim();
-  const image = $("productImage").value.trim();
+  const image_front = $("productImageFront").value.trim();
+  const image_back = $("productImageBack").value.trim();
+  const image_additional = $("productImageAdditional").value.trim();
+  const image_extra = $("productImageExtra").value.trim();
+  const image = image_front;
   const description = $("productDescription").value.trim();
   const featured = $("productFeatured").checked;
   const new_arrival = $("productNewArrival").checked;
@@ -1238,6 +1292,10 @@ async function saveProduct(){
     best_seller,
     tags,
     image,
+    image_front,
+    image_back,
+    image_additional,
+    image_extra,
     sizes
   };
 
@@ -1933,17 +1991,20 @@ $("backBtn").addEventListener("click",()=>{
 });
 
 $("saveBtn").addEventListener("click",saveProduct);
-$("uploadImageBtn").addEventListener("click",uploadProductImage);
-$("productImageFile").addEventListener("change",previewSelectedProductImage);
-$("productImage").addEventListener("input",()=>{
-  const url = $("productImage").value.trim();
-  if(url){
-    $("imagePreview").src = url;
-    $("imagePreview").style.display = "block";
-  }else{
-    $("imagePreview").removeAttribute("src");
-    $("imagePreview").style.display = "none";
-  }
+
+["Front","Back","Additional","Extra"].forEach(slot=>{
+  $("uploadImage"+slot+"Btn").addEventListener("click",()=>uploadProductImage(slot));
+  $("productImage"+slot+"File").addEventListener("change",()=>previewSelectedProductImage(slot));
+  $("productImage"+slot).addEventListener("input",()=>{
+    const url = $("productImage"+slot).value.trim();
+    if(url){
+      $("imagePreview"+slot).src = url;
+      $("imagePreview"+slot).style.display = "block";
+    }else{
+      $("imagePreview"+slot).removeAttribute("src");
+      $("imagePreview"+slot).style.display = "none";
+    }
+  });
 });
 
 $("productMrp").addEventListener("input",updateDiscount);
