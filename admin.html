@@ -547,7 +547,7 @@ h1,h2,h3{margin-top:0}
         <input id="productImageFront" type="url" placeholder="Front image URL (optional)" style="width:100%;margin-top:10px;padding:10px;border:1px solid #d9deea;border-radius:8px">
         <div class="image-upload-row" style="margin-top:10px">
           <input id="productImageFrontFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif">
-          <button id="uploadImageFrontBtn" class="btn secondary" type="button">Upload Front</button>
+          <button id="uploadImageFrontBtn" class="btn secondary" type="button">Upload / Replace Front</button>
         </div>
         <div id="uploadStatusFront" class="upload-status">Maximum 5 MB. JPG, PNG, WEBP or GIF.</div>
         <img id="imagePreviewFront" class="image-preview" alt="Front image preview">
@@ -558,7 +558,7 @@ h1,h2,h3{margin-top:0}
         <input id="productImageBack" type="url" placeholder="Back image URL (optional)" style="width:100%;margin-top:10px;padding:10px;border:1px solid #d9deea;border-radius:8px">
         <div class="image-upload-row" style="margin-top:10px">
           <input id="productImageBackFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif">
-          <button id="uploadImageBackBtn" class="btn secondary" type="button">Upload Back</button>
+          <button id="uploadImageBackBtn" class="btn secondary" type="button">Upload / Replace Back</button>
         </div>
         <div id="uploadStatusBack" class="upload-status">Optional second image.</div>
         <img id="imagePreviewBack" class="image-preview" alt="Back image preview">
@@ -569,7 +569,7 @@ h1,h2,h3{margin-top:0}
         <input id="productImageAdditional" type="url" placeholder="Additional image URL (optional)" style="width:100%;margin-top:10px;padding:10px;border:1px solid #d9deea;border-radius:8px">
         <div class="image-upload-row" style="margin-top:10px">
           <input id="productImageAdditionalFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif">
-          <button id="uploadImageAdditionalBtn" class="btn secondary" type="button">Upload Additional</button>
+          <button id="uploadImageAdditionalBtn" class="btn secondary" type="button">Upload / Replace Additional</button>
         </div>
         <div id="uploadStatusAdditional" class="upload-status">Optional third image.</div>
         <img id="imagePreviewAdditional" class="image-preview" alt="Additional image preview">
@@ -580,10 +580,16 @@ h1,h2,h3{margin-top:0}
         <input id="productImageExtra" type="url" placeholder="Extra image URL (optional)" style="width:100%;margin-top:10px;padding:10px;border:1px solid #d9deea;border-radius:8px">
         <div class="image-upload-row" style="margin-top:10px">
           <input id="productImageExtraFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif">
-          <button id="uploadImageExtraBtn" class="btn secondary" type="button">Upload Extra</button>
+          <button id="uploadImageExtraBtn" class="btn secondary" type="button">Upload / Replace Extra</button>
         </div>
         <div id="uploadStatusExtra" class="upload-status">Optional fourth image.</div>
         <img id="imagePreviewExtra" class="image-preview" alt="Extra image preview">
+      </div>
+
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px">
+        <button id="uploadAllImagesBtn" class="btn primary" type="button">Upload All Selected Images</button>
+        <button id="clearImagesBtn" class="btn danger" type="button">Clear Image Changes</button>
+        <span id="bulkImageStatus" class="upload-status">You can upload or replace each image separately.</span>
       </div>
     </div>
 
@@ -704,6 +710,7 @@ function resetForm(){
         ? "Maximum 5 MB. JPG, PNG, WEBP or GIF."
         : "Optional image.";
   });
+  $("bulkImageStatus").textContent = "You can upload or replace each image separately.";
   $("productDescription").value = "";
   $("productFeatured").checked = false;
   $("productNewArrival").checked = false;
@@ -1223,6 +1230,145 @@ function previewSelectedProductImage(slot){
   $("uploadStatus"+slot).textContent = "Image selected. Click Upload "+slot+" to save it in R2.";
 }
 
+
+async function uploadOneProductImage(slot){
+  const fileInput = $("productImage"+slot+"File");
+  const file = fileInput.files && fileInput.files[0];
+
+  if(!file){
+    return {success:false, skipped:true};
+  }
+
+  if(!file.type || !file.type.startsWith("image/")){
+    throw new Error(slot+" image is not a valid image file.");
+  }
+
+  if(file.size > 5 * 1024 * 1024){
+    throw new Error(slot+" image is larger than 5 MB.");
+  }
+
+  const button = $("uploadImage"+slot+"Btn");
+  const originalText = button.textContent;
+  button.disabled = true;
+  button.textContent = "Uploading...";
+
+  $("uploadStatus"+slot).textContent =
+    "Uploading "+slot+" image to Cloudflare R2...";
+
+  try{
+    const formData = new FormData();
+    formData.append("email", adminEmail);
+    formData.append("password", adminPassword);
+    formData.append("file", file);
+
+    const response = await fetch(
+      API_URL + "/api/admin/upload-image",
+      {
+        method:"POST",
+        body:formData
+      }
+    );
+
+    const data = await response.json().catch(()=>({}));
+
+    if(!response.ok || !data.success){
+      throw new Error(data.error || (slot+" image upload failed"));
+    }
+
+    if(!data.image_url){
+      throw new Error(slot+" upload succeeded but no image URL was returned.");
+    }
+
+    $("productImage"+slot).value = data.image_url;
+    $("imagePreview"+slot).src = data.image_url;
+    $("imagePreview"+slot).style.display = "block";
+    $("uploadStatus"+slot).textContent =
+      "Uploaded successfully. You can replace it anytime.";
+
+    return {success:true,url:data.image_url};
+
+  }finally{
+    button.disabled = false;
+    button.textContent = originalText;
+  }
+}
+
+async function uploadAllProductImages(){
+  const slots = ["Front","Back","Additional","Extra"];
+  const selected = slots.filter(slot=>{
+    const input = $("productImage"+slot+"File");
+    return input && input.files && input.files[0];
+  });
+
+  if(!selected.length){
+    showMessage(
+      "formMessage",
+      "Pehle kam se kam ek image select karo.",
+      "error"
+    );
+    return;
+  }
+
+  const allButton = $("uploadAllImagesBtn");
+  allButton.disabled = true;
+  allButton.textContent = "Uploading Images...";
+  $("bulkImageStatus").textContent =
+    "Uploading "+selected.length+" selected image(s)...";
+
+  let successCount = 0;
+
+  try{
+    for(const slot of selected){
+      try{
+        const result = await uploadOneProductImage(slot);
+        if(result.success) successCount++;
+      }catch(error){
+        $("uploadStatus"+slot).textContent =
+          "Upload failed: "+error.message;
+      }
+    }
+
+    if(successCount === selected.length){
+      showMessage(
+        "formMessage",
+        successCount+" image(s) uploaded successfully.",
+        "success"
+      );
+      $("bulkImageStatus").textContent =
+        "All selected images uploaded successfully.";
+    }else{
+      showMessage(
+        "formMessage",
+        successCount+" of "+selected.length+" image(s) uploaded. Check the image status messages.",
+        "error"
+      );
+      $("bulkImageStatus").textContent =
+        successCount+" of "+selected.length+" uploaded.";
+    }
+
+  }finally{
+    allButton.disabled = false;
+    allButton.textContent = "Upload All Selected Images";
+  }
+}
+
+function clearImageChanges(){
+  const slots = ["Front","Back","Additional","Extra"];
+
+  slots.forEach(slot=>{
+    $("productImage"+slot).value = "";
+    $("productImage"+slot+"File").value = "";
+    $("imagePreview"+slot).removeAttribute("src");
+    $("imagePreview"+slot).style.display = "none";
+    $("uploadStatus"+slot).textContent =
+      slot === "Front"
+        ? "Maximum 5 MB. JPG, PNG, WEBP or GIF."
+        : "Optional image.";
+  });
+
+  $("bulkImageStatus").textContent =
+    "All image fields cleared. Upload new images if needed.";
+}
 
 async function saveProduct(){
 
@@ -2006,6 +2152,9 @@ $("saveBtn").addEventListener("click",saveProduct);
     }
   });
 });
+
+$("uploadAllImagesBtn").addEventListener("click",uploadAllProductImages);
+$("clearImagesBtn").addEventListener("click",clearImageChanges);
 
 $("productMrp").addEventListener("input",updateDiscount);
 $("productPrice").addEventListener("input",updateDiscount);
