@@ -7,6 +7,20 @@ const API_URL = "https://nini-api.msninigarments7368.workers.dev";
 
 let products = [];
 
+/* ---------- PRODUCT IMAGE HELPER ---------- */
+/* Prefer the new Front image, then keep legacy image as fallback. */
+function getProductImage(product) {
+  if (!product) return "nini-logo.jpeg";
+  return (
+    product.image_front ||
+    product.image ||
+    product.image_back ||
+    product.image_additional ||
+    product.image_extra ||
+    "nini-logo.jpeg"
+  );
+}
+
 
 /* ---------- CART ---------- */
 
@@ -276,7 +290,7 @@ function renderWishlist() {
 
   container.innerHTML = items.map(product => {
     const image =
-      product.image || "nini-logo.jpeg";
+      getProductImage(product);
 
     const price =
       getLowestSellingPrice(product);
@@ -538,8 +552,7 @@ function renderProducts(list) {
           : [];
 
       const image =
-        product.image ||
-        "nini-logo.jpeg";
+        getProductImage(product);
 
       const sizeOptions =
         sizes.length
@@ -1685,8 +1698,7 @@ function renderCart() {
 
         const itemImage =
           item.image ||
-          liveProduct?.image ||
-          "nini-logo.jpeg";
+          getProductImage(liveProduct);
 
         return `
 
