@@ -1123,3 +1123,295 @@ img{max-width:100%;display:block}
     font-size:22px !important;
   }
 }
+
+
+/* =========================================================
+   NINI GARMENTS — FINAL RESPONSIVE SHOP POLISH
+   Mobile-first, desktop preserved
+   ========================================================= */
+
+.product{
+  overflow:hidden;
+  transition:transform .18s ease,box-shadow .18s ease;
+}
+
+.product > img{
+  display:block;
+  width:100%;
+  object-fit:cover;
+  background:#f7f8fb;
+}
+
+.product-info{
+  min-width:0;
+}
+
+.product-wishlist-btn{
+  position:absolute;
+  top:10px;
+  right:10px;
+  z-index:3;
+  width:38px;
+  height:38px;
+  border:0;
+  border-radius:50%;
+  background:rgba(255,255,255,.96);
+  box-shadow:0 2px 10px rgba(0,0,0,.13);
+  font-size:24px;
+  line-height:38px;
+  cursor:pointer;
+  color:#475569;
+}
+
+.product-discount-badge{
+  position:absolute;
+  top:12px;
+  left:10px;
+  z-index:3;
+  padding:5px 7px;
+  border-radius:5px;
+  background:#16a34a;
+  color:#fff;
+  font-size:10px;
+  font-weight:800;
+  line-height:1;
+}
+
+.price-row{
+  display:flex;
+  align-items:baseline;
+  flex-wrap:wrap;
+  gap:6px;
+  min-width:0;
+}
+
+.price-main{
+  font-weight:900;
+}
+
+.price-row del{
+  color:#68748b;
+  font-size:12px;
+  font-weight:500;
+}
+
+.product-cart-btn{
+  width:100%;
+}
+
+/* Header/search polish on smaller screens */
+@media(max-width:700px){
+  .top-strip-inner{
+    gap:12px;
+    overflow-x:auto;
+    white-space:nowrap;
+    scrollbar-width:none;
+  }
+
+  .top-strip-inner::-webkit-scrollbar{
+    display:none;
+  }
+
+  .header-row{
+    gap:8px;
+  }
+
+  .search-box{
+    width:100%;
+    order:5;
+  }
+
+  .category-bar{
+    overflow-x:auto;
+    white-space:nowrap;
+    scrollbar-width:none;
+  }
+
+  .category-bar::-webkit-scrollbar{
+    display:none;
+  }
+}
+
+@media(max-width:480px){
+  body{
+    overflow-x:hidden;
+  }
+
+  .market-container{
+    width:100%;
+    box-sizing:border-box;
+  }
+
+  .top-strip{
+    font-size:10px;
+    min-height:28px;
+  }
+
+  .top-strip-inner{
+    padding:6px 12px;
+    justify-content:flex-start;
+  }
+
+  .market-header{
+    position:sticky;
+    top:0;
+    z-index:20;
+  }
+
+  .header-row{
+    padding:8px 10px;
+  }
+
+  .mobile-menu-btn{
+    width:36px;
+    height:36px;
+    flex:0 0 36px;
+  }
+
+  .market-logo{
+    gap:5px;
+  }
+
+  .market-logo img{
+    width:38px;
+    height:38px;
+  }
+
+  .market-logo strong{
+    font-size:15px;
+  }
+
+  .market-logo small{
+    font-size:7px;
+  }
+
+  .delivery-location{
+    display:none !important;
+  }
+
+  .desktop-actions{
+    gap:4px;
+  }
+
+  .desktop-actions .header-action{
+    min-width:34px;
+    padding:3px;
+  }
+
+  .desktop-actions .header-action small{
+    display:none;
+  }
+
+  .desktop-actions .header-action > span{
+    font-size:18px;
+  }
+
+  .search-box{
+    margin-top:2px;
+  }
+
+  .search-box input{
+    min-width:0;
+    height:42px;
+    font-size:14px;
+  }
+
+  .search-box button{
+    height:42px;
+    padding:0 13px;
+    font-size:12px;
+  }
+
+  .category-bar a,
+  .category-bar button{
+    padding:9px 10px;
+    font-size:11px;
+  }
+
+  .products-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:8px;
+    padding-left:0;
+    padding-right:0;
+  }
+
+  .product{
+    border-radius:10px;
+    min-width:0;
+  }
+
+  .product > img{
+    height:158px;
+  }
+
+  .product-info{
+    padding:8px !important;
+  }
+
+  .product-info h3{
+    font-size:13px !important;
+    line-height:1.25 !important;
+    margin:0 0 5px !important;
+    min-height:32px;
+    max-height:32px;
+    display:-webkit-box;
+    -webkit-box-orient:vertical;
+    -webkit-line-clamp:2;
+    overflow:hidden;
+  }
+
+  .price-row{
+    gap:4px;
+    min-height:20px;
+  }
+
+  .price-main{
+    font-size:15px !important;
+    line-height:1.15;
+  }
+
+  .price-row del{
+    font-size:10px;
+  }
+
+  .stock{
+    font-size:10px !important;
+    margin:4px 0 6px !important;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+
+  .product select{
+    width:100%;
+    height:36px;
+    margin-bottom:6px;
+    padding:0 7px;
+    font-size:12px;
+    border-radius:6px;
+  }
+
+  .product-cart-btn{
+    min-height:36px !important;
+    height:36px;
+    padding:0 5px !important;
+    font-size:11px !important;
+    border-radius:6px !important;
+  }
+
+  .product-wishlist-btn{
+    top:6px;
+    right:6px;
+    width:32px;
+    height:32px;
+    line-height:32px;
+    font-size:21px;
+  }
+
+  .product-discount-badge{
+    top:7px;
+    left:7px;
+    padding:4px 5px;
+    font-size:9px;
+  }
+}
