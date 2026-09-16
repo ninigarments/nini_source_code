@@ -516,183 +516,153 @@ async function loadProducts() {
 
 function renderProducts(list) {
 
-  const container =
-    document.getElementById("products");
-
+  const container = document.getElementById("products");
   if (!container) return;
 
   if (!list || list.length === 0) {
-
     container.innerHTML = `
       <div class="loading-state">
-
-        <strong>
-          No products found.
-        </strong>
-
+        <strong>No products found.</strong>
         <br>
-
         Try another search or category.
-
       </div>
     `;
-
     return;
   }
 
-  container.innerHTML =
-    list.map(product => {
+  container.innerHTML = list.map(product => {
 
-      const sizes =
-        Array.isArray(product.sizes)
-          ? product.sizes.filter(
-              size =>
-                Number(size.stock) > 0
-            )
-          : [];
+    const sizes = Array.isArray(product.sizes)
+      ? product.sizes.filter(size => Number(size.stock) > 0)
+      : [];
 
-      const image =
-        getProductImage(product);
+    const image = getProductImage(product);
 
-      const sizeOptions =
-        sizes.length
+    const sizeOptions = sizes.length
+      ? sizes.map(size => `
+          <option value="${escapeHTML(size.size)}">
+            ${escapeHTML(size.size)}
+          </option>
+        `).join("")
+      : `<option value="">Out of stock</option>`;
 
-          ? sizes.map(size => `
-              <option
-                value="${escapeHTML(size.size)}"
-              >
-                ${escapeHTML(size.size)}
-              </option>
-            `).join("")
+    const totalStock = sizes.reduce(
+      (sum, size) => sum + Number(size.stock || 0),
+      0
+    );
 
-          : `
-              <option value="">
-                Out of stock
-              </option>
-            `;
+    const startingPrice = getLowestSellingPrice(product);
 
-      const totalStock =
-        sizes.reduce(
-          (sum, size) =>
-            sum +
-            Number(size.stock || 0),
-          0
+    let startingMrp = Number(product.mrp || 0);
+    let startingDiscount = 0;
+
+    if (sizes.length) {
+      const pricedSizes = sizes
+        .map(size => ({
+          price: Number(size.price || 0),
+          mrp: Number(size.mrp || 0)
+        }))
+        .filter(item => item.price > 0);
+
+      if (pricedSizes.length) {
+        const cheapest = pricedSizes.reduce(
+          (best, item) => item.price < best.price ? item : best
         );
 
-      return `
-        <article
-          class="product"
-          style="position:relative"
+        startingMrp = cheapest.mrp || startingMrp;
+        startingDiscount =
+          startingMrp > cheapest.price
+            ? Math.round(((startingMrp - cheapest.price) / startingMrp) * 100)
+            : 0;
+      }
+    }
+
+    const discountBadge = startingDiscount > 0
+      ? `<span class="product-discount-badge">${startingDiscount}% OFF</span>`
+      : "";
+
+    const priceMarkup = startingPrice > 0
+      ? `
+        <div class="price-row">
+          <span class="price-main">
+            From ₹${startingPrice.toLocaleString("en-IN")}
+          </span>
+          ${
+            startingMrp > startingPrice
+              ? `<del>₹${startingMrp.toLocaleString("en-IN")}</del>`
+              : ""
+          }
+        </div>
+      `
+      : `<div class="price-row"><span class="price-main">Select size for price</span></div>`;
+
+    return `
+      <article class="product" style="position:relative">
+
+        <button
+          type="button"
+          class="product-wishlist-btn"
+          data-wishlist-id="${product.id}"
+          onclick="toggleWishlist(${product.id})"
+          aria-label="${
+            isWishlisted(product.id)
+              ? "Remove from wishlist"
+              : "Add to wishlist"
+          }"
+          title="${
+            isWishlisted(product.id)
+              ? "Remove from wishlist"
+              : "Add to wishlist"
+          }"
+        >
+          ${isWishlisted(product.id) ? "♥" : "♡"}
+        </button>
+
+        ${discountBadge}
+
+        <img
+          src="${escapeHTML(image)}"
+          alt="${escapeHTML(product.name)}"
+          loading="lazy"
+          onerror="this.src='nini-logo.jpeg'"
         >
 
-          <button
-            type="button"
-            data-wishlist-id="${product.id}"
-            onclick="toggleWishlist(${product.id})"
-            aria-label="${
-              isWishlisted(product.id)
-                ? "Remove from wishlist"
-                : "Add to wishlist"
-            }"
-            title="${
-              isWishlisted(product.id)
-                ? "Remove from wishlist"
-                : "Add to wishlist"
-            }"
-            style="
-              position:absolute;
-              top:10px;
-              right:10px;
-              z-index:2;
-              width:38px;
-              height:38px;
-              border:0;
-              border-radius:50%;
-              background:rgba(255,255,255,.95);
-              box-shadow:0 2px 8px rgba(0,0,0,.12);
-              font-size:25px;
-              line-height:38px;
-              cursor:pointer;
-              color:${
-                isWishlisted(product.id)
-                  ? "#e11d48"
-                  : "#475569"
-              }
-            "
-          >
+        <div class="product-info">
+
+          <h3>${escapeHTML(product.name)}</h3>
+
+          ${priceMarkup}
+
+          <div class="stock">
             ${
-              isWishlisted(product.id)
-                ? "♥"
-                : "♡"
+              totalStock > 0
+                ? `✓ ${totalStock} in stock`
+                : "Out of stock"
             }
-          </button>
-
-          <img
-            src="${escapeHTML(image)}"
-            alt="${escapeHTML(product.name)}"
-            onerror="this.src='nini-logo.jpeg'"
-          >
-
-          <div class="product-info">
-
-            <h3>
-              ${escapeHTML(product.name)}
-            </h3>
-
-            <div
-              class="price"
-              id="price-${product.id}"
-            >
-              ${
-                getLowestSellingPrice(product) > 0
-                  ? `From ₹${getLowestSellingPrice(product).toLocaleString("en-IN")}`
-                  : "Select size for price"
-              }
-            </div>
-
-            <div class="stock">
-
-              ${
-                totalStock > 0
-                  ? `✓ ${totalStock} in stock`
-                  : `Out of stock`
-              }
-
-            </div>
-
-            <select
-              id="size-${product.id}"
-              onchange="updateSizePrice(${product.id})"
-              ${sizes.length ? "" : "disabled"}
-            >
-
-              <option value="">
-                Select Size
-              </option>
-
-              ${sizeOptions}
-
-            </select>
-
-            <button
-              onclick="addToCart(${product.id})"
-              ${sizes.length ? "" : "disabled"}
-            >
-
-              ${
-                sizes.length
-                  ? "Add to Cart 🛒"
-                  : "Out of Stock"
-              }
-
-            </button>
-
           </div>
 
-        </article>
-      `;
+          <select
+            id="size-${product.id}"
+            onchange="updateSizePrice(${product.id})"
+            ${sizes.length ? "" : "disabled"}
+            aria-label="Select size for ${escapeHTML(product.name)}"
+          >
+            <option value="">Select Size</option>
+            ${sizeOptions}
+          </select>
 
-    }).join("");
+          <button
+            class="product-cart-btn"
+            onclick="addToCart(${product.id})"
+            ${sizes.length ? "" : "disabled"}
+          >
+            ${sizes.length ? "Add to Cart 🛒" : "Out of Stock"}
+          </button>
+
+        </div>
+      </article>
+    `;
+  }).join("");
 }
 
 
