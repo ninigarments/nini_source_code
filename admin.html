@@ -359,6 +359,35 @@ h1,h2,h3{margin-top:0}
 .image-preview{width:180px;height:180px;object-fit:cover;border-radius:12px;border:1px solid #dce3ef;background:#fff;display:none;margin-top:12px}
 .image-upload-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 
+
+.template-tools{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  align-items:center;
+  padding:14px;
+  margin:0 0 18px;
+  background:#f7f9fd;
+  border:1px solid #dfe5f0;
+  border-radius:12px;
+}
+.template-tools .btn{min-height:42px}
+.template-note{font-size:13px;color:#687287;flex:1;min-width:220px}
+.copy-product-btn{background:#eef7ff;color:#1769aa;border:1px solid #cfe7fb}
+.copy-product-btn:hover{background:#e2f1ff}
+
+
+.size-row{flex-wrap:wrap}
+.size-row input[type=number]{min-width:70px}
+@media(max-width:650px){
+  .size-row{display:grid;grid-template-columns:24px 1fr 1fr 1fr;gap:7px;align-items:center}
+  .size-row label{grid-column:1/-1;grid-row:1;margin-left:28px}
+  .size-row input[type=checkbox]{grid-column:1;grid-row:1}
+  .size-row input[data-stock]{grid-column:1}
+  .size-row input[data-mrp]{grid-column:2}
+  .size-row input[data-price]{grid-column:3}
+}
+
 </style>
 </head>
 
@@ -483,6 +512,12 @@ h1,h2,h3{margin-top:0}
     </div>
 
     <div id="formMessage" class="message"></div>
+
+    <div class="template-tools">
+      <button id="saveTemplateBtn" class="btn secondary" type="button">📋 Copy Template</button>
+      <button id="pasteTemplateBtn" class="btn copy-product-btn" type="button">📥 Paste Template</button>
+      <span class="template-note">Ek product ka pura form save karke next listing mein paste kar sakte ho. Phir sirf name, price, offer, images ya sizes jo change karna ho change karo.</span>
+    </div>
 
     <div class="field">
       <label>Product Name *</label>
@@ -623,7 +658,7 @@ h1,h2,h3{margin-top:0}
     </div>
 
     <h3>Sizes & Stock</h3>
-    <p class="meta">Sirf jis size ko select karoge wahi product mein available hoga.</p>
+    <p class="meta">Sirf jis size ko select karoge wahi customer ko size option mein dikhega. Har selected size ka stock, MRP aur selling price alag set kar sakte ho.</p>
 
     <div id="sizeGrid" class="size-grid"></div>
 
@@ -1003,6 +1038,12 @@ function renderProducts(){
           <div class="actions">
 
             <button
+              class="btn copy-product-btn"
+              onclick="copyProduct(${product.id})">
+              📋 Copy
+            </button>
+
+            <button
               class="btn secondary"
               onclick="editProduct(${product.id})">
               Edit
@@ -1048,16 +1089,12 @@ function updateDiscount(){
   $("discountDisplay").textContent = discount + "% OFF";
 }
 
-function editProduct(id){
+function populateFormFromProduct(product, copyMode=false){
 
-  const product = products.find(p=>Number(p.id) === Number(id));
+  editingId = copyMode ? null : product.id;
 
-  if(!product) return;
-
-  editingId = id;
-
-  $("formTitle").textContent = "Edit Product";
-  $("saveBtn").textContent = "Update Product";
+  $("formTitle").textContent = copyMode ? "Copy Product" : "Edit Product";
+  $("saveBtn").textContent = copyMode ? "Add Copied Product" : "Update Product";
 
   $("productName").value = product.name || "";
   $("productCategory").value = product.category || "";
@@ -1065,6 +1102,7 @@ function editProduct(id){
   $("productPrice").value = product.price ?? "";
   $("productAgeGroup").value = product.age_group || "";
   $("productSku").value = product.sku || "";
+
   const imageValues = {
     Front: product.image_front || product.image || "",
     Back: product.image_back || "",
@@ -1075,20 +1113,34 @@ function editProduct(id){
   ["Front","Back","Additional","Extra"].forEach(slot=>{
     $("productImage"+slot).value = imageValues[slot];
     $("productImage"+slot+"File").value = "";
+
     if(imageValues[slot]){
       $("imagePreview"+slot).src = imageValues[slot];
       $("imagePreview"+slot).style.display = "block";
-      $("uploadStatus"+slot).textContent = "Existing image loaded.";
+      $("uploadStatus"+slot).textContent =
+        copyMode ? "Copied image URL. Replace it only if this product needs a different photo."
+                 : "Existing image loaded.";
     }else{
       $("imagePreview"+slot).removeAttribute("src");
       $("imagePreview"+slot).style.display = "none";
+      $("uploadStatus"+slot).textContent =
+        slot === "Front"
+          ? "Select a photo, then click Upload / Replace Front."
+          : "Optional. Select a photo, then upload.";
     }
+
+    $("imageBox"+slot).classList.remove("uploaded","uploading");
   });
+
+  $("imageUploadGlobalStatus").textContent =
+    copyMode ? "Product template copied. You can change anything before saving." : "";
+
   $("productDescription").value = product.description || "";
   $("productFeatured").checked = Number(product.featured || 0) === 1;
   $("productNewArrival").checked = Number(product.new_arrival || 0) === 1;
   $("productBestSeller").checked = Number(product.best_seller || 0) === 1;
   $("productTags").value = product.tags || "";
+
   updateDiscount();
 
   SIZE_OPTIONS.forEach(size=>{
@@ -1101,16 +1153,16 @@ function editProduct(id){
       `input[data-stock="${CSS.escape(size)}"]`
     );
 
-    const found = (product.sizes || []).find(
-      s => s.size === size
-    );
-
     const mrp = document.querySelector(
       `input[data-mrp="${CSS.escape(size)}"]`
     );
 
     const price = document.querySelector(
       `input[data-price="${CSS.escape(size)}"]`
+    );
+
+    const found = (product.sizes || []).find(
+      s => String(s.size) === String(size)
     );
 
     checkbox.checked = !!found;
@@ -1121,11 +1173,201 @@ function editProduct(id){
     stock.value = found ? Number(found.stock || 0) : 0;
     mrp.value = found ? Number(found.mrp || 0) : 0;
     price.value = found ? Number(found.price || 0) : 0;
-
   });
 
   hideMessage("formMessage");
   showForm();
+}
+
+function editProduct(id){
+
+  const product = products.find(
+    p=>Number(p.id) === Number(id)
+  );
+
+  if(!product) return;
+
+  populateFormFromProduct(product,false);
+}
+
+function copyProduct(id){
+
+  const product = products.find(
+    p=>Number(p.id) === Number(id)
+  );
+
+  if(!product) return;
+
+  resetForm();
+  populateFormFromProduct(product,true);
+
+  showMessage(
+    "formMessage",
+    "Template copied. Ab jo details change karni hain change karke Add Copied Product dabao.",
+    "success"
+  );
+}
+
+function getFormSnapshot(){
+
+  return {
+    name: $("productName").value.trim(),
+    category: $("productCategory").value,
+    mrp: $("productMrp").value,
+    price: $("productPrice").value,
+    age_group: $("productAgeGroup").value,
+    sku: $("productSku").value.trim(),
+
+    image_front: $("productImageFront").value.trim(),
+    image_back: $("productImageBack").value.trim(),
+    image_additional: $("productImageAdditional").value.trim(),
+    image_extra: $("productImageExtra").value.trim(),
+
+    description: $("productDescription").value.trim(),
+    featured: $("productFeatured").checked,
+    new_arrival: $("productNewArrival").checked,
+    best_seller: $("productBestSeller").checked,
+    tags: $("productTags").value.trim(),
+
+    sizes: collectSizes()
+  };
+}
+
+function applyFormSnapshot(data){
+
+  if(!data || typeof data !== "object") return;
+
+  editingId = null;
+  $("formTitle").textContent = "Add Product";
+  $("saveBtn").textContent = "Save Product";
+
+  $("productName").value = data.name || "";
+  $("productCategory").value = data.category || "";
+  $("productMrp").value = data.mrp ?? "";
+  $("productPrice").value = data.price ?? "";
+  $("productAgeGroup").value = data.age_group || "";
+  $("productSku").value = data.sku || "";
+
+  const imageValues = {
+    Front: data.image_front || "",
+    Back: data.image_back || "",
+    Additional: data.image_additional || "",
+    Extra: data.image_extra || ""
+  };
+
+  ["Front","Back","Additional","Extra"].forEach(slot=>{
+    $("productImage"+slot).value = imageValues[slot];
+    $("productImage"+slot+"File").value = "";
+
+    if(imageValues[slot]){
+      $("imagePreview"+slot).src = imageValues[slot];
+      $("imagePreview"+slot).style.display = "block";
+      $("uploadStatus"+slot).textContent = "Template image URL loaded.";
+    }else{
+      $("imagePreview"+slot).removeAttribute("src");
+      $("imagePreview"+slot).style.display = "none";
+      $("uploadStatus"+slot).textContent =
+        slot === "Front"
+          ? "Select a photo, then click Upload / Replace Front."
+          : "Optional. Select a photo, then upload.";
+    }
+
+    $("imageBox"+slot).classList.remove("uploaded","uploading");
+  });
+
+  $("productDescription").value = data.description || "";
+  $("productFeatured").checked = !!data.featured;
+  $("productNewArrival").checked = !!data.new_arrival;
+  $("productBestSeller").checked = !!data.best_seller;
+  $("productTags").value = data.tags || "";
+
+  const sizes = Array.isArray(data.sizes) ? data.sizes : [];
+
+  SIZE_OPTIONS.forEach(size=>{
+
+    const checkbox = document.querySelector(
+      `input[data-size="${CSS.escape(size)}"]`
+    );
+
+    const stock = document.querySelector(
+      `input[data-stock="${CSS.escape(size)}"]`
+    );
+
+    const mrp = document.querySelector(
+      `input[data-mrp="${CSS.escape(size)}"]`
+    );
+
+    const price = document.querySelector(
+      `input[data-price="${CSS.escape(size)}"]`
+    );
+
+    const found = sizes.find(
+      s => String(s.size) === String(size)
+    );
+
+    checkbox.checked = !!found;
+    stock.disabled = !found;
+    mrp.disabled = !found;
+    price.disabled = !found;
+
+    stock.value = found ? Number(found.stock || 0) : 0;
+    mrp.value = found ? Number(found.mrp || 0) : 0;
+    price.value = found ? Number(found.price || 0) : 0;
+  });
+
+  updateDiscount();
+  $("imageUploadGlobalStatus").textContent = "Template pasted. Review and change the required details before saving.";
+  hideMessage("formMessage");
+}
+
+function saveCurrentTemplate(){
+
+  try{
+    const data = getFormSnapshot();
+    localStorage.setItem("nini_product_template_v1",JSON.stringify(data));
+
+    showMessage(
+      "formMessage",
+      "✓ Product template saved. Next time Add Product mein 'Paste Template' dabana.",
+      "success"
+    );
+
+    showUploadToast("✓ Product template saved successfully!","success");
+
+  }catch(error){
+    showMessage("formMessage","Could not save template: "+error.message,"error");
+  }
+}
+
+function pasteSavedTemplate(){
+
+  try{
+    const raw = localStorage.getItem("nini_product_template_v1");
+
+    if(!raw){
+      showMessage(
+        "formMessage",
+        "Abhi koi saved template nahi hai. Pehle Copy Template dabao.",
+        "error"
+      );
+      return;
+    }
+
+    const data = JSON.parse(raw);
+
+    applyFormSnapshot(data);
+
+    showMessage(
+      "formMessage",
+      "✓ Template pasted. Ab required details change karke product save karo.",
+      "success"
+    );
+
+    showUploadToast("✓ Product template pasted!","success");
+
+  }catch(error){
+    showMessage("formMessage","Saved template could not be loaded: "+error.message,"error");
+  }
 }
 
 function collectSizes(){
@@ -2089,6 +2331,9 @@ $("backBtn").addEventListener("click",()=>{
 });
 
 $("saveBtn").addEventListener("click",saveProduct);
+
+$("saveTemplateBtn").addEventListener("click",saveCurrentTemplate);
+$("pasteTemplateBtn").addEventListener("click",pasteSavedTemplate);
 
 ["Front","Back","Additional","Extra"].forEach(slot=>{
   $("uploadImage"+slot+"Btn").addEventListener("click",()=>uploadProductImage(slot));
