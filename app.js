@@ -484,6 +484,20 @@ async function loadProducts() {
         ? data.products
         : [];
 
+    // Keep the latest product data locally so product.html
+    // can open instantly without waiting for the API again.
+    try {
+      localStorage.setItem(
+        "niniProductsCache",
+        JSON.stringify(products)
+      );
+    } catch (cacheError) {
+      console.warn(
+        "Nini product cache could not be saved:",
+        cacheError
+      );
+    }
+
     renderProducts(products);
 
   } catch (error) {
