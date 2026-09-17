@@ -32,9 +32,23 @@ button{cursor:pointer}
 .top small{opacity:.75}
 
 .container{
-  max-width:1200px;
-  margin:30px auto;
-  padding:0 20px;
+  width:100%;
+  max-width:none;
+  margin:24px 0;
+  padding:0 24px;
+}
+
+/* PC-first admin workspace: use the available desktop width. */
+#dashboard.container,
+#ordersScreen.container,
+#formScreen.container{
+  width:100%;
+  max-width:none;
+}
+
+.login{
+  max-width:430px;
+  margin:80px auto;
 }
 
 .card{
@@ -152,13 +166,14 @@ h1,h2,h3{margin-top:0}
 }
 .stock{
   display:inline-block;
-  background:#e9f8ee;
-  color:#16833b;
-  padding:5px 9px;
-  border-radius:20px;
+  background:transparent;
+  color:#64748b;
+  padding:2px 0;
+  border-radius:0;
   font-size:12px;
-  font-weight:700;
+  font-weight:600;
 }
+.stock strong{font-weight:700;color:#475569}
 .inactive{
   background:#ffe9ee;
   color:#c6204d;
@@ -588,6 +603,84 @@ h1,h2,h3{margin-top:0}
     border-top:1px dashed #e2e8f0;
   }
 }
+
+/* ---------- PC-FIRST ADMIN LAYOUT ---------- */
+@media(min-width:851px){
+  .container{
+    padding-left:24px;
+    padding-right:24px;
+  }
+
+  #dashboard .products{
+    grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
+    gap:18px;
+  }
+
+  #ordersScreen .card,
+  #formScreen .card{
+    width:100%;
+  }
+
+  #ordersScreen .order-card{
+    width:100%;
+  }
+
+  #formScreen .card{
+    padding:28px;
+  }
+}
+
+@media(max-width:650px){
+  .container{
+    width:100%;
+    margin:14px 0;
+    padding:0 10px;
+  }
+
+  .card{
+    padding:14px;
+    border-radius:12px;
+  }
+
+  .top{
+    padding:13px 14px;
+  }
+
+  .logo-title{font-size:20px}
+
+  .products{
+    grid-template-columns:1fr;
+  }
+
+  .product-img{height:180px}
+
+  .product-body{padding:13px}
+
+  .actions{
+    flex-wrap:wrap;
+  }
+
+  .actions button{
+    min-width:0;
+  }
+}
+
+/* Product-card copy action */
+.copy-product-btn{
+  background:#f1f5ff;
+  color:#2167ed;
+  border:1px solid #d9e3ff;
+}
+.copy-product-btn:hover{
+  background:#e7eeff;
+}
+.copy-note{
+  display:block;
+  margin-top:6px;
+  color:#64748b;
+  font-size:12px;
+}
+
 </style>
 </head>
 
@@ -716,6 +809,7 @@ h1,h2,h3{margin-top:0}
     <div class="field">
       <label>Product Name *</label>
       <input id="productName" type="text" placeholder="Example: Dino Hoodie Set">
+      <small class="copy-note">Tip: Products page se ⧉ Copy dabao, phir sirf name, SKU, price/offer, color ya photos jaise required details change karke new product save kar sakte ho.</small>
     </div>
 
     <div class="field">
@@ -1237,6 +1331,12 @@ function renderProducts(){
               Edit
             </button>
 
+            <button
+              class="btn copy-product-btn"
+              onclick="copyProduct(${product.id})">
+              ⧉ Copy
+            </button>
+
             ${
               product.active
               ? `<button
@@ -1355,6 +1455,113 @@ function editProduct(id){
 
   hideMessage("formMessage");
   showForm();
+}
+
+
+function copyProduct(id){
+
+  const product = products.find(
+    p=>Number(p.id) === Number(id)
+  );
+
+  if(!product) return;
+
+  /*
+    Copy mode intentionally keeps the existing product ID out of the save
+    request. The copied product is therefore created as a NEW product.
+    All listing details, images, size prices and stock are pre-filled so
+    the admin only needs to change the few fields that are different.
+  */
+  editingId = null;
+
+  $("formTitle").textContent = "Copy Product";
+  $("saveBtn").textContent = "Add Copied Product";
+
+  $("productName").value = product.name || "";
+  $("productCategory").value = product.category || "";
+  $("productMrp").value = product.mrp ?? product.price ?? "";
+  $("productPrice").value = product.price ?? "";
+  $("productAgeGroup").value = product.age_group || "";
+  $("productSku").value = "";  // SKU should be unique for the new listing.
+
+  const imageValues = {
+    Front: product.image_front || product.image || "",
+    Back: product.image_back || "",
+    Additional: product.image_additional || "",
+    Extra: product.image_extra || ""
+  };
+
+  ["Front","Back","Additional","Extra"].forEach(slot=>{
+    $("productImage"+slot).value = imageValues[slot];
+    $("productImage"+slot+"File").value = "";
+
+    if(imageValues[slot]){
+      $("imagePreview"+slot).src = imageValues[slot];
+      $("imagePreview"+slot).style.display = "block";
+      $("uploadStatus"+slot).textContent = "Copied existing image URL.";
+    }else{
+      $("imagePreview"+slot).removeAttribute("src");
+      $("imagePreview"+slot).style.display = "none";
+      $("uploadStatus"+slot).textContent =
+        slot === "Front"
+          ? "Select a photo, then click Upload / Replace Front."
+          : "Optional. Select a photo, then upload.";
+    }
+
+    $("imageBox"+slot).classList.remove("uploaded","uploading");
+  });
+
+  $("imageUploadGlobalStatus").textContent =
+    "Product copied. Change the required details, then add it.";
+
+  $("productDescription").value = product.description || "";
+  $("productFeatured").checked = Number(product.featured || 0) === 1;
+  $("productNewArrival").checked = Number(product.new_arrival || 0) === 1;
+  $("productBestSeller").checked = Number(product.best_seller || 0) === 1;
+  $("productTags").value = product.tags || "";
+
+  updateDiscount();
+
+  SIZE_OPTIONS.forEach(size=>{
+
+    const checkbox = document.querySelector(
+      `input[data-size="${CSS.escape(size)}"]`
+    );
+
+    const stock = document.querySelector(
+      `input[data-stock="${CSS.escape(size)}"]`
+    );
+
+    const mrp = document.querySelector(
+      `input[data-mrp="${CSS.escape(size)}"]`
+    );
+
+    const price = document.querySelector(
+      `input[data-price="${CSS.escape(size)}"]`
+    );
+
+    const found = (product.sizes || []).find(
+      s => s.size === size
+    );
+
+    checkbox.checked = !!found;
+    stock.disabled = !found;
+    mrp.disabled = !found;
+    price.disabled = !found;
+
+    stock.value = found ? Number(found.stock || 0) : 0;
+    mrp.value = found ? Number(found.mrp || 0) : 0;
+    price.value = found ? Number(found.price || 0) : 0;
+
+  });
+
+  hideMessage("formMessage");
+  showForm();
+
+  showUploadToast(
+    "✓ Product copied. Change name/SKU/price as needed and save as a new product.",
+    "success"
+  );
 }
 
 function collectSizes(){
