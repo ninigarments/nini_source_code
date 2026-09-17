@@ -265,6 +265,153 @@ h1,h2,h3{margin-top:0}
   font-size:17px;
   font-weight:800;
 }
+
+/* ---------- MEESHO-STYLE ORDER PRESENTATION ---------- */
+.order-card{
+  border:1px solid #dfe5ee;
+  border-radius:12px;
+  padding:0;
+  margin-bottom:16px;
+  overflow:hidden;
+  background:#fff;
+}
+.order-top{
+  padding:14px 16px;
+  margin:0;
+  background:#fff;
+  border-bottom:1px solid #e7ebf2;
+}
+.order-info{
+  margin:0;
+  border-radius:0;
+  border-bottom:1px solid #e7ebf2;
+  padding:13px 16px;
+}
+.order-items{
+  padding:0 16px 14px;
+  border-top:0;
+}
+.order-items-head{
+  display:grid;
+  grid-template-columns:minmax(260px,2.2fr) 110px 110px 120px;
+  gap:12px;
+  align-items:center;
+  padding:11px 0;
+  border-bottom:1px solid #dfe5ee;
+  color:#64748b;
+  font-size:12px;
+  font-weight:800;
+  text-transform:uppercase;
+}
+.order-item{
+  display:grid;
+  grid-template-columns:minmax(260px,2.2fr) 110px 110px 120px;
+  gap:12px;
+  align-items:center;
+  padding:12px 0;
+  border-bottom:1px solid #edf0f5;
+}
+.order-product-cell{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  min-width:0;
+}
+.order-product-thumb{
+  width:62px;
+  height:62px;
+  flex:0 0 62px;
+  border:1px solid #dfe5ee;
+  border-radius:8px;
+  background:#f8fafc;
+  object-fit:cover;
+}
+.order-product-thumb-fallback{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:#94a3b8;
+  font-size:10px;
+  font-weight:700;
+}
+.order-product-name{
+  font-weight:800;
+  line-height:1.35;
+}
+.order-product-meta{
+  margin-top:4px;
+  font-size:12px;
+  color:#64748b;
+  line-height:1.45;
+}
+.order-item-stat{
+  font-weight:700;
+  color:#172033;
+}
+.order-item-stat small{
+  display:block;
+  color:#64748b;
+  font-size:11px;
+  font-weight:600;
+  margin-bottom:2px;
+}
+.order-qty{
+  font-size:16px;
+  font-weight:800;
+}
+.order-total{
+  padding-top:13px;
+}
+.pending-summary-main{
+  min-width:0;
+}
+.pending-summary-product{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.pending-summary-thumb{
+  width:48px;
+  height:48px;
+  border-radius:7px;
+  object-fit:cover;
+  border:1px solid #dfe5ee;
+  background:#f8fafc;
+  flex:0 0 48px;
+}
+.pending-summary-thumb-fallback{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:#94a3b8;
+  font-size:9px;
+  font-weight:700;
+}
+.pending-summary-row{
+  grid-template-columns:minmax(260px,1.5fr) 70px 70px minmax(260px,2fr);
+}
+.order-placed-line{
+  color:#64748b;
+  font-size:12px;
+  margin-top:4px;
+}
+@media(max-width:850px){
+  .order-items-head{display:none}
+  .order-item{
+    grid-template-columns:1fr auto;
+    gap:9px;
+  }
+  .order-product-cell{grid-column:1/-1}
+  .order-item-stat{text-align:right}
+}
+@media(max-width:650px){
+  .order-top{padding:12px}
+  .order-info{padding:11px 12px}
+  .order-items{padding:0 12px 12px}
+  .order-product-thumb{width:54px;height:54px;flex-basis:54px}
+  .pending-summary-row{grid-template-columns:1fr 58px 58px}
+}
+
 @media(max-width:650px){
   .order-info{grid-template-columns:1fr}
   .order-top{flex-direction:column}
@@ -360,7 +507,6 @@ h1,h2,h3{margin-top:0}
 .image-upload-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 
 
-<style>
 .pending-product-summary{
   background:#fff;
   border:1px solid #dbe3ef;
@@ -442,8 +588,6 @@ h1,h2,h3{margin-top:0}
     border-top:1px dashed #e2e8f0;
   }
 }
-</style>
-
 </style>
 </head>
 
@@ -1947,6 +2091,17 @@ function getOrderProductName(item){
   );
 }
 
+function getOrderImage(item){
+  const product = getOrderProduct(item);
+  return String(
+    item?.image_front ||
+    item?.image ||
+    product?.image_front ||
+    product?.image ||
+    ""
+  ).trim();
+}
+
 function getOrderSize(item){
   return String(item?.size || "").trim();
 }
@@ -1992,6 +2147,7 @@ function buildPendingProductSummary(orders){
         groups.set(key,{
           sku,
           name:getOrderProductName(item),
+          image:getOrderImage(item),
           orderIds:new Set(),
           quantity:0,
           sizes:new Map()
@@ -2040,8 +2196,18 @@ function renderPendingProductSummary(orders){
     return `
       <div class="pending-summary-row">
         <div class="pending-summary-main">
-          <strong>${escapeHtml(group.name)}</strong>
-          <span class="pending-summary-sku">SKU: ${escapeHtml(group.sku)}</span>
+          <div class="pending-summary-product">
+            ${
+              group.image
+              ? `<img class="pending-summary-thumb" src="${escapeHtml(group.image)}" alt="${escapeHtml(group.name)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+              : ""
+            }
+            <div class="pending-summary-thumb pending-summary-thumb-fallback" style="${group.image ? "display:none" : "display:flex"}">No Image</div>
+            <div>
+              <strong>${escapeHtml(group.name)}</strong>
+              <span class="pending-summary-sku">SKU: ${escapeHtml(group.sku)}</span>
+            </div>
+          </div>
         </div>
         <div class="pending-summary-stat">
           <strong>${group.orderIds.size}</strong>
@@ -2063,7 +2229,7 @@ function renderPendingProductSummary(orders){
       <div class="pending-summary-head">
         <div>
           <strong>${escapeHtml(getOrderFilterLabel(currentOrderFilter))} Product Summary</strong>
-          <div class="meta">Same product/SKU is grouped together across these orders.</div>
+          <div class="meta">SKU-wise total: how many orders, total pieces and which sizes are ordered.</div>
         </div>
         <div class="pending-summary-total">
           <strong>${totalQty}</strong>
@@ -2222,30 +2388,60 @@ function renderOrders(){
     );
 
     const itemHtml = items.length
-      ? items.map(item=>{
+      ? `
+        <div class="order-items-head">
+          <span>Product Details</span>
+          <span>SKU</span>
+          <span>Quantity</span>
+          <span>Amount</span>
+        </div>
+        ${items.map(item=>{
 
           const productName = getOrderProductName(item);
           const sku = getOrderSku(item);
           const size = getOrderSize(item);
           const qty = getOrderQuantity(item);
-          const itemTotal =
-            Number(item.price || 0) * qty;
+          const imageUrl = getOrderImage(item);
+          const unitPrice = Number(item.price || 0);
+          const itemTotal = unitPrice * qty;
 
           return `
             <div class="order-item">
-              <span>
-                <strong>${escapeHtml(productName)}</strong>
-                <span class="meta">
-                  ${sku ? " • SKU: " + escapeHtml(sku) : ""}
-                  ${size ? " • Size: " + escapeHtml(size) : ""}
-                  • Qty: ${qty}
-                </span>
-              </span>
-              <strong>₹${itemTotal.toLocaleString("en-IN")}</strong>
+              <div class="order-product-cell">
+                ${
+                  imageUrl
+                  ? `<img class="order-product-thumb" src="${escapeHtml(imageUrl)}" alt="${escapeHtml(productName)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+                  : ""
+                }
+                <div class="order-product-thumb order-product-thumb-fallback" style="${imageUrl ? "display:none" : "display:flex"}">No Image</div>
+                <div style="min-width:0">
+                  <div class="order-product-name">${escapeHtml(productName)}</div>
+                  <div class="order-product-meta">
+                    ${size ? "Size: <strong>" + escapeHtml(size) + "</strong>" : "Size: —"}
+                    · Unit Price: ₹${unitPrice.toLocaleString("en-IN")}
+                  </div>
+                </div>
+              </div>
+
+              <div class="order-item-stat">
+                <small>SKU</small>
+                ${escapeHtml(sku)}
+              </div>
+
+              <div class="order-item-stat">
+                <small>Qty</small>
+                <span class="order-qty">${qty} pcs</span>
+              </div>
+
+              <div class="order-item-stat">
+                <small>Item Total</small>
+                <strong>₹${itemTotal.toLocaleString("en-IN")}</strong>
+              </div>
             </div>
           `;
-        }).join("")
-      : `<div class="meta">No item details found.</div>`;
+        }).join("")}
+      `
+      : `<div class="meta" style="padding:14px 0">No item details found.</div>`;
 
     return `
       <div class="order-card">
@@ -2255,7 +2451,8 @@ function renderOrders(){
             <input class="order-select" type="checkbox" data-order-id="${Number(order.id)}">
             <div>
               <div class="order-id">Order #${Number(order.id)}</div>
-              <div class="meta">Order placed: ${escapeHtml(created)}</div>
+              <div class="order-placed-line">Order placed: ${escapeHtml(created)}</div>
+              <div class="meta" style="margin-top:4px">Total: ${items.length} product${items.length===1?"":"s"} · ${totalQty} pcs</div>
             </div>
           </div>
 
