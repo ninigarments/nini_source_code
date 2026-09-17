@@ -267,20 +267,84 @@ function render(){
   document.title=(product.name||"Product")+" | Nini Garments";
 }
 async function load(){
+  const id=new URLSearchParams(location.search).get("id");
+
+  // 1) Show the product immediately from the homepage cache.
   try{
-    const id=new URLSearchParams(location.search).get("id");
+    const cached=JSON.parse(
+      localStorage.getItem("niniProductsCache") || "[]"
+    );
+
+    if(Array.isArray(cached) && cached.length){
+      products=cached;
+      product=products.find(
+        x=>Number(x.id)===Number(id)
+      );
+
+      if(product){
+        selectedSize="";
+        quantity=1;
+        render();
+        updateCounts();
+      }
+    }
+  }catch(cacheError){
+    console.warn(
+      "Nini product cache could not be read:",
+      cacheError
+    );
+  }
+
+  // 2) Refresh in the background so price/stock/images stay current.
+  try{
     const r=await fetch(API_URL+"/api/products");
     if(!r.ok)throw new Error("Product API request failed");
+
     const data=await r.json();
-    products=Array.isArray(data.products)?data.products:[];
-    product=products.find(x=>Number(x.id)===Number(id));
-    if(!product){document.getElementById("app").innerHTML='<div class="error"><h2>Product not found</h2><a href="index.html#shop">Back to Shop</a></div>';return}
-    selectedSize="";
-    quantity=1;
-    render();
-    updateCounts();
+    const freshProducts=
+      Array.isArray(data.products)
+        ? data.products
+        : [];
+
+    try{
+      localStorage.setItem(
+        "niniProductsCache",
+        JSON.stringify(freshProducts)
+      );
+    }catch(cacheError){
+      console.warn(
+        "Nini product cache could not be refreshed:",
+        cacheError
+      );
+    }
+
+    products=freshProducts;
+
+    const freshProduct=products.find(
+      x=>Number(x.id)===Number(id)
+    );
+
+    if(freshProduct){
+      const hadProduct=!!product;
+      product=freshProduct;
+
+      if(!hadProduct){
+        selectedSize="";
+        quantity=1;
+      }
+
+      render();
+      updateCounts();
+    }else if(!product){
+      document.getElementById("app").innerHTML=
+        '<div class="error"><h2>Product not found</h2><a href="index.html#shop">Back to Shop</a></div>';
+    }
   }catch(e){
-    document.getElementById("app").innerHTML='<div class="error"><h2>Could not load product</h2><p>Please refresh and try again.</p></div>';
+    // If cached product was already shown, keep showing it.
+    if(!product){
+      document.getElementById("app").innerHTML=
+        '<div class="error"><h2>Could not load product</h2><p>Please refresh and try again.</p></div>';
+    }
   }
 }
 document.addEventListener("touchstart",e=>{
