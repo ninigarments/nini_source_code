@@ -2063,164 +2063,40 @@ function removeFromCart(index) {
 /* ---------- CHECKOUT ---------- */
 
 let checkoutPaymentMethod = "cod";
-async function loadSavedCheckoutAddress() {
 
-  const user =
-    JSON.parse(
-      localStorage.getItem("nini_user") || "null"
-    );
-
-  if (!user || !user.id) return;
-
-  const nameEl = document.getElementById("checkoutName");
-  const mobileEl = document.getElementById("checkoutMobile");
-  const addressEl = document.getElementById("checkoutAddress");
-  const cityEl = document.getElementById("checkoutCity");
-  const stateEl = document.getElementById("checkoutState");
-  const pinEl = document.getElementById("checkoutPin");
-
-  if (
-    !nameEl ||
-    !mobileEl ||
-    !addressEl ||
-    !cityEl ||
-    !stateEl ||
-    !pinEl
-  ) {
-    return;
-  }
-
-  try {
-
-    const response =
-      await fetch(
-        `${API_URL}/api/orders/user/${encodeURIComponent(user.id)}`
-      );
-
-    const data = await response.json();
-
-    if (
-      !response.ok ||
-      !data.success ||
-      !Array.isArray(data.orders) ||
-      !data.orders.length
-    ) {
-      return;
-    }
-
-    // Use the latest previous order that contains a complete address.
-    const saved =
-      data.orders.find(order =>
-        String(order.address || "").trim() &&
-        String(order.city || "").trim() &&
-        String(order.state || "").trim() &&
-        String(order.pin_code || "").trim()
-      );
-
-    if (!saved) return;
-
-    nameEl.value =
-      saved.full_name || user.name || "";
-
-    mobileEl.value =
-      saved.mobile || "";
-
-    addressEl.value =
-      saved.address || "";
-
-    cityEl.value =
-      saved.city || "";
-
-    stateEl.value =
-      saved.state || "";
-
-    pinEl.value =
-      saved.pin_code || "";
-
-    let note =
-      document.getElementById("savedAddressNote");
-
-    if (!note) {
-
-      note =
-        document.createElement("div");
-
-      note.id =
-        "savedAddressNote";
-
-      note.style.cssText =
-        "margin-top:-6px;padding:9px 11px;background:#ecfdf5;color:#166534;border:1px solid #bbf7d0;border-radius:7px;font-size:13px;font-weight:600;";
-
-      note.textContent =
-        "✓ Saved address loaded. You can edit it before placing the order.";
-
-      const form =
-        document.getElementById("checkoutForm");
-
-      if (form) {
-        form.insertBefore(
-          note,
-          form.firstElementChild
-        );
-      }
-
-    } else {
-
-      note.textContent =
-        "✓ Saved address loaded. You can edit it before placing the order.";
-
-    }
-
-  } catch (error) {
-
-    console.warn(
-      "Could not load saved checkout address:",
-      error
-    );
-
-  }
-}
-
-async function placeOrder() {
+function placeOrder() {
 
   if (cart.length === 0) {
 
-    alert("Your cart is empty.");
-
-    return;
-  }
-
-  const user =
-    JSON.parse(
-      localStorage.getItem("nini_user") || "null"
+    alert(
+      "Your cart is empty."
     );
-
-  if (!user || !user.id) {
-
-    alert("Please login before checkout.");
-
-    if (typeof openAccount === "function") {
-      openAccount();
-    }
 
     return;
   }
 
   ensureCheckoutModal();
 
+  checkoutPaymentMethod = "cod";
+
+  const codRadio = document.querySelector(
+    '#checkoutForm input[name="checkoutPaymentMethod"][value="cod"]'
+  );
+
+  if (codRadio) codRadio.checked = true;
+
   renderCheckout();
 
   const modal =
-    document.getElementById("checkoutModal");
+    document.getElementById(
+      "checkoutModal"
+    );
 
   modal.style.display = "flex";
 
-  document.body.style.overflow = "hidden";
-
-  // Load the customer's latest saved address.
-  await loadSavedCheckoutAddress();
+  document.body.style.overflow =
+    "hidden";
 }
-
 
 function closeCheckout() {
 
