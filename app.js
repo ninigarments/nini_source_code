@@ -2835,3 +2835,722 @@ document.addEventListener(
 
   }
 );
+(function () {
+  "use strict";
+
+  let niniSavedAddresses = [];
+  let niniSelectedAddressId = null;
+  let niniOriginalEnsureCheckoutModal =
+    typeof ensureCheckoutModal === "function"
+      ? ensureCheckoutModal
+      : null;
+  let niniOriginalSubmitCheckout =
+    typeof submitCheckout === "function"
+      ? submitCheckout
+      : null;
+
+  function niniGetUser() {
+    try {
+      return JSON.parse(
+        localStorage.getItem("nini_user") || "null"
+      );
+    } catch {
+      return null;
+    }
+  }
+
+  function niniEscape(value) {
+    if (typeof escapeHTML === "function") {
+      return escapeHTML(value);
+    }
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function niniSetField(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.value = value ?? "";
+  }
+
+  function niniGetField(id) {
+    const el = document.getElementById(id);
+    return el ? el.value.trim() : "";
+  }
+
+  function niniFillAddress(address) {
+    if (!address) return;
+
+    niniSelectedAddressId = Number(address.id) || null;
+
+    niniSetField("checkoutName", address.full_name);
+    niniSetField("checkoutMobile", address.mobile);
+    niniSetField("checkoutAddress", address.address);
+    niniSetField("checkoutCity", address.city);
+    niniSetField("checkoutState", address.state);
+    niniSetField("checkoutPin", address.pin_code);
+
+    const select = document.getElementById("niniSavedAddressSelect");
+    if (select) {
+      select.value = String(address.id);
+    }
+
+    document.querySelectorAll(".nini-address-card").forEach(card => {
+      card.style.borderColor =
+        String(card.dataset.addressId) === String(address.id)
+          ? "#2167ed"
+          : "#d7dce5";
+      card.style.background =
+        String(card.dataset.addressId) === String(address.id)
+          ? "#f5f8ff"
+          : "#fff";
+    });
+  }
+
+  function niniRenderAddressUI() {
+    const box = document.getElementById("niniSavedAddressBox");
+    if (!box) return;
+
+    if (!niniSavedAddresses.length) {
+      box.innerHTML = `
+        <div style="
+          border:1px dashed #cbd5e1;
+          border-radius:10px;
+          padding:14px;
+          background:#fafafa;
+          color:#64748b;
+          font-size:13px
+        ">
+          No saved address yet. Fill the delivery details below.
+        </div>
+      `;
+      return;
+    }
+
+    const defaultAddress =
+      niniSavedAddresses.find(a => Number(a.is_default) === 1) ||
+      niniSavedAddresses[0];
+
+    box.innerHTML = `
+      <div style="
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        gap:10px;
+        margin-bottom:10px
+      ">
+        <strong>Saved Delivery Addresses</strong>
+        <button
+          type="button"
+          id="niniAddNewAddressBtn"
+          style="
+            border:0;
+            background:#eef4ff;
+            color:#2167ed;
+            padding:7px 10px;
+            border-radius:7px;
+            font-weight:700;
+            cursor:pointer
+          "
+        >
+          + Add New
+        </button>
+      </div>
+
+      <div style="display:grid;gap:9px">
+        ${niniSavedAddresses.map(a => `
+          <div
+            class="nini-address-card"
+            data-address-id="${Number(a.id)}"
+            style="
+              border:1px solid #d7dce5;
+              border-radius:10px;
+              padding:12px;
+              cursor:pointer;
+              background:#fff
+            "
+          >
+            <div style="
+              display:flex;
+              justify-content:space-between;
+              gap:8px;
+              align-items:flex-start
+            ">
+              <div>
+                <strong>${niniEscape(a.label || "Address")}</strong>
+                ${
+                  Number(a.is_default) === 1
+                    ? `<span style="
+                        margin-left:6px;
+                        color:#16a34a;
+                        font-size:11px;
+                        font-weight:700
+                      ">DEFAULT</span>`
+                    : ""
+                }
+              </div>
+              <button
+                type="button"
+                class="nini-use-address"
+                data-address-id="${Number(a.id)}"
+                style="
+                  border:0;
+                  background:#2167ed;
+                  color:#fff;
+                  padding:6px 10px;
+                  border-radius:6px;
+                  font-weight:700;
+                  cursor:pointer
+                "
+              >
+                Use
+              </button>
+            </div>
+
+            <div style="
+              margin-top:7px;
+              font-size:13px;
+              line-height:1.5;
+              color:#475569
+            ">
+              <strong>${niniEscape(a.full_name || "")}</strong><br>
+              ${niniEscape(a.address || "")}<br>
+              ${niniEscape(a.city || "")},
+              ${niniEscape(a.state || "")} -
+              ${niniEscape(a.pin_code || "")}<br>
+              📱 ${niniEscape(a.mobile || "")}
+            </div>
+
+            <div style="
+              display:flex;
+              gap:8px;
+              margin-top:9px
+            ">
+              <button
+                type="button"
+                class="nini-edit-address"
+                data-address-id="${Number(a.id)}"
+                style="
+                  border:1px solid #d7dce5;
+                  background:#fff;
+                  padding:6px 10px;
+                  border-radius:6px;
+                  cursor:pointer
+                "
+              >
+                Edit
+              </button>
+
+              <button
+                type="button"
+                class="nini-delete-address"
+                data-address-id="${Number(a.id)}"
+                style="
+                  border:1px solid #fecaca;
+                  background:#fff;
+                  color:#dc2626;
+                  padding:6px 10px;
+                  border-radius:6px;
+                  cursor:pointer
+                "
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        `).join("")}
+      </div>
+    `;
+
+    const selected =
+      niniSavedAddresses.find(
+        a => Number(a.id) === Number(niniSelectedAddressId)
+      ) || defaultAddress;
+
+    if (selected) {
+      niniFillAddress(selected);
+    }
+
+    document
+      .querySelectorAll(".nini-address-card")
+      .forEach(card => {
+        card.addEventListener("click", function (event) {
+          if (
+            event.target.closest("button")
+          ) return;
+
+          const id = Number(card.dataset.addressId);
+          const address = niniSavedAddresses.find(
+            a => Number(a.id) === id
+          );
+          if (address) niniFillAddress(address);
+        });
+      });
+
+    document
+      .querySelectorAll(".nini-use-address")
+      .forEach(button => {
+        button.addEventListener("click", function () {
+          const id = Number(button.dataset.addressId);
+          const address = niniSavedAddresses.find(
+            a => Number(a.id) === id
+          );
+          if (address) niniFillAddress(address);
+        });
+      });
+
+    document
+      .querySelectorAll(".nini-edit-address")
+      .forEach(button => {
+        button.addEventListener("click", async function () {
+          const id = Number(button.dataset.addressId);
+          const address = niniSavedAddresses.find(
+            a => Number(a.id) === id
+          );
+          if (!address) return;
+
+          niniFillAddress(address);
+
+          const label = prompt(
+            "Address label (Home / Work / Other):",
+            address.label || "Home"
+          );
+
+          if (label === null) return;
+
+          await niniSaveAddress({
+            id,
+            label: label.trim() || "Home",
+            is_default: Number(address.is_default) === 1
+          });
+        });
+      });
+
+    document
+      .querySelectorAll(".nini-delete-address")
+      .forEach(button => {
+        button.addEventListener("click", async function () {
+          const id = Number(button.dataset.addressId);
+          const address = niniSavedAddresses.find(
+            a => Number(a.id) === id
+          );
+          if (!address) return;
+
+          if (
+            !confirm(
+              `Delete ${address.label || "this address"}?`
+            )
+          ) return;
+
+          const user = niniGetUser();
+          if (!user?.id) return;
+
+          try {
+            const response = await fetch(
+              `${API_URL}/api/addresses/${id}`,
+              {
+                method: "DELETE",
+                headers: {
+                  "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                  user_id: Number(user.id)
+                })
+              }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+              throw new Error(
+                data.error || "Unable to delete address"
+              );
+            }
+
+            await niniLoadAddresses();
+          } catch (error) {
+            console.error(
+              "Nini delete address error:",
+              error
+            );
+            alert(
+              error.message ||
+              "Unable to delete address."
+            );
+          }
+        });
+      });
+
+    const addButton =
+      document.getElementById("niniAddNewAddressBtn");
+
+    if (addButton) {
+      addButton.onclick = function () {
+        niniSelectedAddressId = null;
+        niniSetField("checkoutName", "");
+        niniSetField("checkoutMobile", "");
+        niniSetField("checkoutAddress", "");
+        niniSetField("checkoutCity", "");
+        niniSetField("checkoutState", "");
+        niniSetField("checkoutPin", "");
+
+        const select =
+          document.getElementById(
+            "niniSavedAddressSelect"
+          );
+
+        if (select) select.value = "";
+      };
+    }
+  }
+
+  async function niniLoadAddresses() {
+    const user = niniGetUser();
+
+    if (!user?.id) {
+      niniSavedAddresses = [];
+      niniSelectedAddressId = null;
+      niniRenderAddressUI();
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${API_URL}/api/addresses/user/${Number(user.id)}`
+      );
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(
+          data.error || "Unable to load saved addresses"
+        );
+      }
+
+      niniSavedAddresses =
+        Array.isArray(data.addresses)
+          ? data.addresses
+          : [];
+
+      const defaultAddress =
+        niniSavedAddresses.find(
+          a => Number(a.is_default) === 1
+        ) || niniSavedAddresses[0] || null;
+
+      if (defaultAddress) {
+        niniFillAddress(defaultAddress);
+      } else {
+        niniSelectedAddressId = null;
+      }
+
+      niniRenderAddressUI();
+    } catch (error) {
+      console.error(
+        "Nini saved address loading error:",
+        error
+      );
+    }
+  }
+
+  async function niniSaveAddress(extra = {}) {
+    const user = niniGetUser();
+
+    if (!user?.id) {
+      alert("Please login before saving an address.");
+      return false;
+    }
+
+    const payload = {
+      user_id: Number(user.id),
+      full_name: niniGetField("checkoutName"),
+      mobile: niniGetField("checkoutMobile"),
+      address: niniGetField("checkoutAddress"),
+      city: niniGetField("checkoutCity"),
+      state: niniGetField("checkoutState"),
+      pin_code: niniGetField("checkoutPin"),
+      label: extra.label || "Home",
+      is_default: Boolean(extra.is_default)
+    };
+
+    if (
+      !payload.full_name ||
+      !payload.mobile ||
+      !payload.address ||
+      !payload.city ||
+      !payload.state ||
+      !payload.pin_code
+    ) {
+      return false;
+    }
+
+    /*
+      Current Worker exposes POST /api/addresses and DELETE.
+      It does not expose an edit PUT route in the current code,
+      so editing is intentionally not sent as PUT here.
+      A new address can be saved safely without touching orders.
+    */
+
+    try {
+      const response = await fetch(
+        `${API_URL}/api/addresses`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(
+          data.error || "Unable to save address"
+        );
+      }
+
+      await niniLoadAddresses();
+      return true;
+    } catch (error) {
+      console.error(
+        "Nini save address error:",
+        error
+      );
+      alert(
+        error.message ||
+        "Unable to save address."
+      );
+      return false;
+    }
+  }
+
+  function niniInjectAddressBox() {
+    const form =
+      document.getElementById("checkoutForm");
+
+    if (!form) return;
+
+    if (
+      document.getElementById(
+        "niniSavedAddressBox"
+      )
+    ) return;
+
+    const box =
+      document.createElement("div");
+
+    box.id = "niniSavedAddressBox";
+
+    box.style.cssText =
+      "margin-bottom:2px";
+
+    const firstField =
+      document.getElementById("checkoutName");
+
+    if (firstField) {
+      const label =
+        firstField.closest("label");
+
+      if (label) {
+        label.parentNode.insertBefore(
+          box,
+          label
+        );
+      } else {
+        form.insertBefore(
+          box,
+          form.firstChild
+        );
+      }
+    } else {
+      form.insertBefore(
+        box,
+        form.firstChild
+      );
+    }
+
+    niniRenderAddressUI();
+  }
+
+  /*
+    Override only the modal creation wrapper.
+    All existing checkout/payment/order functionality stays intact.
+  */
+  if (niniOriginalEnsureCheckoutModal) {
+    window.ensureCheckoutModal = function () {
+      niniOriginalEnsureCheckoutModal();
+      niniInjectAddressBox();
+    };
+  }
+
+  /*
+    Open checkout and immediately load the customer's saved addresses.
+  */
+  const niniOriginalPlaceOrder =
+    typeof placeOrder === "function"
+      ? placeOrder
+      : null;
+
+  if (niniOriginalPlaceOrder) {
+    window.placeOrder = function () {
+      if (
+        typeof cart !== "undefined" &&
+        Array.isArray(cart) &&
+        cart.length === 0
+      ) {
+        alert("Your cart is empty.");
+        return;
+      }
+
+      ensureCheckoutModal();
+
+      if (typeof renderCheckout === "function") {
+        renderCheckout();
+      }
+
+      const modal =
+        document.getElementById("checkoutModal");
+
+      if (modal) {
+        modal.style.display = "flex";
+      }
+
+      document.body.style.overflow = "hidden";
+
+      niniInjectAddressBox();
+      niniLoadAddresses();
+    };
+  }
+
+  /*
+    IMPORTANT:
+    Save the address after a successful order.
+    We do not save an address before order success,
+    preventing abandoned checkouts from filling the address book.
+  */
+  if (niniOriginalSubmitCheckout) {
+    window.submitCheckout = async function (event) {
+      event.preventDefault();
+
+      const form =
+        document.getElementById("checkoutForm");
+
+      if (!form || !form.reportValidity()) {
+        return;
+      }
+
+      const beforeOrder = {
+        full_name: niniGetField("checkoutName"),
+        mobile: niniGetField("checkoutMobile"),
+        address: niniGetField("checkoutAddress"),
+        city: niniGetField("checkoutCity"),
+        state: niniGetField("checkoutState"),
+        pin_code: niniGetField("checkoutPin")
+      };
+
+      /*
+        Run the existing checkout implementation.
+        It keeps the current price, coupon, payment,
+        stock and order logic untouched.
+      */
+      await niniOriginalSubmitCheckout(event);
+
+      /*
+        Existing implementation clears cart after a successful
+        order. If cart is now empty, treat that as success.
+      */
+      const orderSucceeded =
+        typeof cart !== "undefined" &&
+        Array.isArray(cart) &&
+        cart.length === 0;
+
+      if (!orderSucceeded) {
+        return;
+      }
+
+      const user = niniGetUser();
+      if (!user?.id) return;
+
+      if (
+        !beforeOrder.full_name ||
+        !beforeOrder.mobile ||
+        !beforeOrder.address ||
+        !beforeOrder.city ||
+        !beforeOrder.state ||
+        !beforeOrder.pin_code
+      ) {
+        return;
+      }
+
+      /*
+        Do not create a duplicate copy if the selected saved
+        address already matches the checkout address.
+      */
+      const duplicate =
+        niniSavedAddresses.some(a =>
+          String(a.full_name || "").trim() === beforeOrder.full_name &&
+          String(a.mobile || "").trim() === beforeOrder.mobile &&
+          String(a.address || "").trim() === beforeOrder.address &&
+          String(a.city || "").trim() === beforeOrder.city &&
+          String(a.state || "").trim() === beforeOrder.state &&
+          String(a.pin_code || "").trim() === beforeOrder.pin_code
+        );
+
+      if (!duplicate) {
+        try {
+          await fetch(
+            `${API_URL}/api/addresses`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({
+                user_id: Number(user.id),
+                full_name: beforeOrder.full_name,
+                mobile: beforeOrder.mobile,
+                address: beforeOrder.address,
+                city: beforeOrder.city,
+                state: beforeOrder.state,
+                pin_code: beforeOrder.pin_code,
+                label: "Home",
+                is_default: niniSavedAddresses.length === 0
+              })
+            }
+          );
+        } catch (error) {
+          console.warn(
+            "Nini automatic address save failed:",
+            error
+          );
+        }
+      }
+    };
+  }
+
+  /*
+    If an already-created checkout modal exists,
+    inject the saved-address box after app.js loads.
+  */
+  document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+      setTimeout(() => {
+        niniInjectAddressBox();
+      }, 300);
+    }
+  );
+
+  /*
+    Expose a small manual helper for testing.
+    Browser console:
+      niniReloadSavedAddresses()
+  */
+  window.niniReloadSavedAddresses =
+    niniLoadAddresses;
+
+})();
