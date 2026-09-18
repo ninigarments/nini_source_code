@@ -692,7 +692,15 @@ h1,h2,h3{margin-top:0}
     <div class="logo-title">NINI <span>GARMENTS</span></div>
     <small>Admin Product Management</small>
   </div>
-  <button id="logoutBtn" class="logout hidden">Logout</button>
+  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+    <button id="enableNotificationsBtn" class="logout hidden" type="button" style="background:#2167ed;color:#fff">
+      🔔 Enable Notifications
+    </button>
+    <button id="testNotificationBtn" class="logout hidden" type="button" style="background:#fff;color:#172033">
+      Test 🔔
+    </button>
+    <button id="logoutBtn" class="logout hidden">Logout</button>
+  </div>
 </div>
 
 <!-- LOGIN -->
@@ -740,6 +748,8 @@ h1,h2,h3{margin-top:0}
       </button>
     </div>
   </div>
+
+  <div id="notificationStatus" class="message" style="display:none"></div>
 
   <div id="dashboardMessage" class="message"></div>
 
@@ -1190,6 +1200,7 @@ async function login(){
 
     showDashboard();
     await loadProducts();
+    prepareNotificationUIAfterLogin();
 
   }catch(error){
 
@@ -2712,11 +2723,293 @@ function renderOrders(){
   }).join("");
 }
 
+
+/* =========================================================
+   ADMIN WEB PUSH NOTIFICATIONS
+   Connects this logged-in admin browser to the Worker push API.
+   The actual push is delivered by /nini-admin-sw.js.
+   ========================================================= */
+
+const PUSH_API_URL = API_URL;
+let pushRegistration = null;
+let pushSubscription = null;
+
+function setNotificationStatus(text, type="success"){
+  const el = $("notificationStatus");
+  if(!el) return;
+  el.textContent = text;
+  el.style.display = "block";
+  el.className = "message " + type;
+}
+
+function base64UrlToUint8Array(base64Url){
+  const padding = "=".repeat((4 - (base64Url.length % 4)) % 4);
+  const base64 = (base64Url + padding)
+    .replace(/-/g, "+")
+    .replace(/_/g, "/");
+  const rawData = atob(base64);
+  return Uint8Array.from([...rawData].map(char => char.charCodeAt(0)));
+}
+
+async function getPushPublicKey(){
+  const response = await fetch(PUSH_API_URL + "/api/push/public-key", {
+    method: "GET",
+    cache: "no-store"
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if(!response.ok || !data.success || !data.public_key){
+    throw new Error(data.error || "Could not get notification public key.");
+  }
+
+  return data.public_key;
+}
+
+async function enableAdminNotifications(){
+  if(!adminEmail || !adminPassword){
+    setNotificationStatus("Please login first.", "error");
+    return;
+  }
+
+  if(!("serviceWorker" in navigator)){
+    setNotificationStatus("This browser does not support notifications.", "error");
+    return;
+  }
+
+  if(!("PushManager" in window)){
+    setNotificationStatus("Push notifications are not supported in this browser.", "error");
+    return;
+  }
+
+  if(!window.isSecureContext){
+    setNotificationStatus("Notifications require HTTPS. Open the secure Nini Garments admin URL.", "error");
+    return;
+  }
+
+  const button = $("enableNotificationsBtn");
+  if(button){
+    button.disabled = true;
+    button.textContent = "Enabling...";
+  }
+
+  try{
+    if(Notification.permission === "denied"){
+      throw new Error("Notifications are blocked in this browser. Allow notifications for the Nini Garments admin site in browser settings, then try again.");
+    }
+
+    const permission = Notification.permission === "granted"
+      ? "granted"
+      : await Notification.requestPermission();
+
+    if(permission !== "granted"){
+      throw new Error("Notification permission was not granted.");
+    }
+
+    pushRegistration = await navigator.serviceWorker.register(
+      "/nini-admin-sw.js",
+      {scope:"/"}
+    );
+
+    await navigator.serviceWorker.ready;
+
+    const publicKey = await getPushPublicKey();
+
+    pushSubscription = await pushRegistration.pushManager.getSubscription();
+
+    if(!pushSubscription){
+      pushSubscription = await pushRegistration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: base64UrlToUint8Array(publicKey)
+      });
+    }
+
+    const subscriptionJson = pushSubscription.toJSON();
+
+    const response = await fetch(
+      PUSH_API_URL + "/api/admin/push/subscribe",
+      {
+        method:"POST",
+        headers:{
+          "Content-Type":"application/json"
+        },
+        body:JSON.stringify({
+          email:adminEmail,
+          password:adminPassword,
+          subscription:subscriptionJson
+        })
+      }
+    );
+
+    const data = await response.json().catch(()=>({}));
+
+    if(!response.ok || !data.success){
+      throw new Error(data.error || "Could not save notification subscription.");
+    }
+
+    localStorage.setItem("nini_push_enabled","1");
+
+    if(button){
+      button.textContent = "🔔 Notifications On";
+      button.style.background = "#16833b";
+      button.disabled = false;
+    }
+
+    if($("testNotificationBtn")){
+      $("testNotificationBtn").classList.remove("hidden");
+    }
+
+    setNotificationStatus(
+      "✓ Notifications are ON for this device/browser. You will get an alert when a new order arrives.",
+      "success"
+    );
+
+  }catch(error){
+
+    if(button){
+      button.disabled = false;
+      button.textContent = "🔔 Enable Notifications";
+    }
+
+    setNotificationStatus(
+      "Notification setup failed: " + error.message,
+      "error"
+    );
+  }
+}
+
+async function testAdminNotification(){
+  if(!adminEmail || !adminPassword){
+    setNotificationStatus("Please login first.", "error");
+    return;
+  }
+
+  const button = $("testNotificationBtn");
+  if(button){
+    button.disabled = true;
+    button.textContent = "Sending...";
+  }
+
+  try{
+    const response = await fetch(
+      PUSH_API_URL + "/api/admin/push/test",
+      {
+        method:"POST",
+        headers:{
+          "Content-Type":"application/json"
+        },
+        body:JSON.stringify({
+          email:adminEmail,
+          password:adminPassword
+        })
+      }
+    );
+
+    const data = await response.json().catch(()=>({}));
+
+    if(!response.ok || !data.success){
+      throw new Error(data.error || "Test notification failed.");
+    }
+
+    setNotificationStatus(
+      "✓ Test notification sent. Check this device/browser.",
+      "success"
+    );
+
+  }catch(error){
+    setNotificationStatus(
+      "Test notification failed: " + error.message,
+      "error"
+    );
+  }finally{
+    if(button){
+      button.disabled = false;
+      button.textContent = "Test 🔔";
+    }
+  }
+}
+
+function setupNotificationButtons(){
+  const enableButton = $("enableNotificationsBtn");
+  const testButton = $("testNotificationBtn");
+
+  if(enableButton){
+    enableButton.addEventListener("click", enableAdminNotifications);
+  }
+
+  if(testButton){
+    testButton.addEventListener("click", testAdminNotification);
+  }
+}
+
+async function prepareNotificationUIAfterLogin(){
+  const enableButton = $("enableNotificationsBtn");
+  const testButton = $("testNotificationBtn");
+
+  if(!enableButton) return;
+
+  enableButton.classList.remove("hidden");
+
+  if(
+    "Notification" in window &&
+    Notification.permission === "granted" &&
+    "serviceWorker" in navigator &&
+    "PushManager" in window
+  ){
+    try{
+      pushRegistration = await navigator.serviceWorker.register(
+        "/nini-admin-sw.js",
+        {scope:"/"}
+      );
+
+      pushSubscription = await pushRegistration.pushManager.getSubscription();
+
+      if(pushSubscription){
+        enableButton.textContent = "🔔 Notifications On";
+        enableButton.style.background = "#16833b";
+        if(testButton) testButton.classList.remove("hidden");
+        return;
+      }
+    }catch(_){}
+  }
+
+  enableButton.textContent = "🔔 Enable Notifications";
+}
+
+async function removeAdminNotificationSubscription(){
+  try{
+    if(!pushSubscription){
+      if(pushRegistration){
+        pushSubscription = await pushRegistration.pushManager.getSubscription();
+      }
+    }
+
+    if(!pushSubscription) return;
+
+    await fetch(
+      PUSH_API_URL + "/api/admin/push/unsubscribe",
+      {
+        method:"POST",
+        headers:{
+          "Content-Type":"application/json"
+        },
+        body:JSON.stringify({
+          email:adminEmail,
+          password:adminPassword,
+          endpoint:pushSubscription.endpoint
+        })
+      }
+    );
+  }catch(_){}
+}
+
 $("loginBtn").addEventListener("click",login);
 
 $("loginPassword").addEventListener("keydown",e=>{
   if(e.key === "Enter") login();
 });
+
+setupNotificationButtons();
 
 $("ordersBtn").addEventListener("click",()=>{
   showOrders();
@@ -2814,6 +3107,9 @@ $("logoutBtn").addEventListener("click",()=>{
   products = [];
 
   $("logoutBtn").classList.add("hidden");
+  $("enableNotificationsBtn").classList.add("hidden");
+  $("testNotificationBtn").classList.add("hidden");
+  $("notificationStatus").style.display = "none";
   $("dashboard").classList.add("hidden");
   $("formScreen").classList.add("hidden");
   $("ordersScreen").classList.add("hidden");
