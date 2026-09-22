@@ -3112,19 +3112,62 @@ document.addEventListener(
           );
           if (!address) return;
 
-          niniFillAddress(address);
-
           const label = prompt(
             "Address label (Home / Work / Other):",
             address.label || "Home"
           );
-
           if (label === null) return;
 
-          await niniSaveAddress({
+          const fullName = prompt(
+            "Full name:",
+            address.full_name || ""
+          );
+          if (fullName === null) return;
+
+          const mobile = prompt(
+            "10-digit mobile number:",
+            address.mobile || ""
+          );
+          if (mobile === null) return;
+
+          const addressLine = prompt(
+            "Full address:",
+            address.address || ""
+          );
+          if (addressLine === null) return;
+
+          const city = prompt(
+            "City:",
+            address.city || ""
+          );
+          if (city === null) return;
+
+          const state = prompt(
+            "State:",
+            address.state || ""
+          );
+          if (state === null) return;
+
+          const pinCode = prompt(
+            "6-digit PIN code:",
+            address.pin_code || ""
+          );
+          if (pinCode === null) return;
+
+          const makeDefault = confirm(
+            "Make this address the default address?"
+          );
+
+          await niniUpdateAddress({
             id,
             label: label.trim() || "Home",
-            is_default: Number(address.is_default) === 1
+            full_name: fullName.trim(),
+            mobile: mobile.trim(),
+            address: addressLine.trim(),
+            city: city.trim(),
+            state: state.trim(),
+            pin_code: pinCode.trim(),
+            is_default: makeDefault
           });
         });
       });
@@ -3286,13 +3329,6 @@ document.addEventListener(
       return false;
     }
 
-    /*
-      Current Worker exposes POST /api/addresses and DELETE.
-      It does not expose an edit PUT route in the current code,
-      so editing is intentionally not sent as PUT here.
-      A new address can be saved safely without touching orders.
-    */
-
     try {
       const response = await fetch(
         `${API_URL}/api/addresses`,
@@ -3323,6 +3359,74 @@ document.addEventListener(
       alert(
         error.message ||
         "Unable to save address."
+      );
+      return false;
+    }
+  }
+
+  async function niniUpdateAddress(payload) {
+    const user = niniGetUser();
+
+    if (!user?.id || !payload?.id) {
+      alert("Please login before editing an address.");
+      return false;
+    }
+
+    const body = {
+      user_id: Number(user.id),
+      label: String(payload.label || "Home").trim() || "Home",
+      full_name: String(payload.full_name || "").trim(),
+      mobile: String(payload.mobile || "").trim(),
+      address: String(payload.address || "").trim(),
+      city: String(payload.city || "").trim(),
+      state: String(payload.state || "").trim(),
+      pin_code: String(payload.pin_code || "").trim(),
+      is_default: Boolean(payload.is_default)
+    };
+
+    if (
+      !body.full_name ||
+      !/^[6-9]\d{9}$/.test(body.mobile) ||
+      !body.address ||
+      !body.city ||
+      !body.state ||
+      !/^\d{6}$/.test(body.pin_code)
+    ) {
+      alert("Please enter valid address details.");
+      return false;
+    }
+
+    try {
+      const response = await fetch(
+        `${API_URL}/api/addresses/${Number(payload.id)}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(body)
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(
+          data.error || "Unable to update address"
+        );
+      }
+
+      niniSelectedAddressId = Number(payload.id);
+      await niniLoadAddresses();
+      return true;
+    } catch (error) {
+      console.error(
+        "Nini update address error:",
+        error
+      );
+      alert(
+        error.message ||
+        "Unable to update address."
       );
       return false;
     }
