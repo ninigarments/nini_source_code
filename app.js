@@ -3112,62 +3112,19 @@ document.addEventListener(
           );
           if (!address) return;
 
+          niniFillAddress(address);
+
           const label = prompt(
             "Address label (Home / Work / Other):",
             address.label || "Home"
           );
+
           if (label === null) return;
 
-          const fullName = prompt(
-            "Full name:",
-            address.full_name || ""
-          );
-          if (fullName === null) return;
-
-          const mobile = prompt(
-            "10-digit mobile number:",
-            address.mobile || ""
-          );
-          if (mobile === null) return;
-
-          const addressLine = prompt(
-            "Full address:",
-            address.address || ""
-          );
-          if (addressLine === null) return;
-
-          const city = prompt(
-            "City:",
-            address.city || ""
-          );
-          if (city === null) return;
-
-          const state = prompt(
-            "State:",
-            address.state || ""
-          );
-          if (state === null) return;
-
-          const pinCode = prompt(
-            "6-digit PIN code:",
-            address.pin_code || ""
-          );
-          if (pinCode === null) return;
-
-          const makeDefault = confirm(
-            "Make this address the default address?"
-          );
-
-          await niniUpdateAddress({
+          await niniSaveAddress({
             id,
             label: label.trim() || "Home",
-            full_name: fullName.trim(),
-            mobile: mobile.trim(),
-            address: addressLine.trim(),
-            city: city.trim(),
-            state: state.trim(),
-            pin_code: pinCode.trim(),
-            is_default: makeDefault
+            is_default: Number(address.is_default) === 1
           });
         });
       });
@@ -3329,6 +3286,13 @@ document.addEventListener(
       return false;
     }
 
+    /*
+      Current Worker exposes POST /api/addresses and DELETE.
+      It does not expose an edit PUT route in the current code,
+      so editing is intentionally not sent as PUT here.
+      A new address can be saved safely without touching orders.
+    */
+
     try {
       const response = await fetch(
         `${API_URL}/api/addresses`,
@@ -3359,74 +3323,6 @@ document.addEventListener(
       alert(
         error.message ||
         "Unable to save address."
-      );
-      return false;
-    }
-  }
-
-  async function niniUpdateAddress(payload) {
-    const user = niniGetUser();
-
-    if (!user?.id || !payload?.id) {
-      alert("Please login before editing an address.");
-      return false;
-    }
-
-    const body = {
-      user_id: Number(user.id),
-      label: String(payload.label || "Home").trim() || "Home",
-      full_name: String(payload.full_name || "").trim(),
-      mobile: String(payload.mobile || "").trim(),
-      address: String(payload.address || "").trim(),
-      city: String(payload.city || "").trim(),
-      state: String(payload.state || "").trim(),
-      pin_code: String(payload.pin_code || "").trim(),
-      is_default: Boolean(payload.is_default)
-    };
-
-    if (
-      !body.full_name ||
-      !/^[6-9]\d{9}$/.test(body.mobile) ||
-      !body.address ||
-      !body.city ||
-      !body.state ||
-      !/^\d{6}$/.test(body.pin_code)
-    ) {
-      alert("Please enter valid address details.");
-      return false;
-    }
-
-    try {
-      const response = await fetch(
-        `${API_URL}/api/addresses/${Number(payload.id)}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(body)
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(
-          data.error || "Unable to update address"
-        );
-      }
-
-      niniSelectedAddressId = Number(payload.id);
-      await niniLoadAddresses();
-      return true;
-    } catch (error) {
-      console.error(
-        "Nini update address error:",
-        error
-      );
-      alert(
-        error.message ||
-        "Unable to update address."
       );
       return false;
     }
@@ -3657,4 +3553,273 @@ document.addEventListener(
   window.niniReloadSavedAddresses =
     niniLoadAddresses;
 
+})();
+/* =========================================================
+   NINI CUSTOMER MY ORDERS
+   - Connects the header Orders link to the real customer order API.
+   - Shows only the logged-in customer's orders.
+   - Uses the existing /api/orders/user/:userId endpoint.
+   ========================================================= */
+(function initNiniCustomerOrders() {
+  function niniOrdersEscape(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function niniOrdersUser() {
+    try {
+      return JSON.parse(localStorage.getItem("nini_user") || "null");
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function niniOrderStatusLabel(status) {
+    const labels = {
+      pending: "Pending",
+      confirmed: "Confirmed",
+      packed: "Packed",
+      shipped: "Shipped",
+      out_for_delivery: "Out for Delivery",
+      delivered: "Delivered",
+      cancelled: "Cancelled"
+    };
+    return labels[String(status || "").toLowerCase()] || "Pending";
+  }
+
+  function niniOrderStatusClass(status) {
+    const value = String(status || "pending").toLowerCase();
+    if (value === "delivered") return "delivered";
+    if (value === "cancelled") return "cancelled";
+    if (value === "shipped" || value === "out_for_delivery") return "shipping";
+    if (value === "confirmed" || value === "packed") return "processing";
+    return "pending";
+  }
+
+  function ensureNiniOrdersModal() {
+    let modal = document.getElementById("niniCustomerOrdersModal");
+    if (modal) return modal;
+
+    modal = document.createElement("div");
+    modal.id = "niniCustomerOrdersModal";
+    modal.innerHTML = `
+      <div class="nini-orders-backdrop" data-nini-orders-close="1"></div>
+      <section class="nini-orders-panel" role="dialog" aria-modal="true" aria-labelledby="niniOrdersTitle">
+        <div class="nini-orders-head">
+          <div>
+            <div class="nini-orders-kicker">NINI GARMENTS</div>
+            <h2 id="niniOrdersTitle">My Orders</h2>
+          </div>
+          <button type="button" class="nini-orders-close" aria-label="Close" data-nini-orders-close="1">×</button>
+        </div>
+        <div id="niniOrdersContent" class="nini-orders-content">
+          <div class="nini-orders-loading">Loading your orders...</div>
+        </div>
+      </section>
+    `;
+
+    const style = document.createElement("style");
+    style.id = "niniCustomerOrdersStyles";
+    style.textContent = `
+      #niniCustomerOrdersModal{
+        position:fixed;inset:0;z-index:100000;display:none;
+        font-family:inherit;
+      }
+      #niniCustomerOrdersModal.is-open{display:block}
+      .nini-orders-backdrop{
+        position:absolute;inset:0;background:rgba(15,23,42,.58);
+        backdrop-filter:blur(2px)
+      }
+      .nini-orders-panel{
+        position:absolute;top:0;right:0;height:100%;width:min(620px,100%);
+        background:#fff;box-shadow:-10px 0 35px rgba(0,0,0,.18);
+        display:flex;flex-direction:column;overflow:hidden
+      }
+      .nini-orders-head{
+        display:flex;justify-content:space-between;align-items:flex-start;
+        gap:16px;padding:22px 22px 16px;border-bottom:1px solid #e5e7eb
+      }
+      .nini-orders-kicker{font-size:12px;font-weight:800;letter-spacing:2px;color:#ff2d68;margin-bottom:5px}
+      .nini-orders-head h2{margin:0;font-size:25px;color:#111827}
+      .nini-orders-close{
+        border:0;background:#f3f4f6;border-radius:50%;width:38px;height:38px;
+        font-size:26px;line-height:1;cursor:pointer;color:#111827
+      }
+      .nini-orders-content{overflow:auto;padding:18px 22px 28px;flex:1;background:#f8fafc}
+      .nini-orders-loading,.nini-orders-empty,.nini-orders-error{
+        background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:22px;
+        text-align:center;color:#64748b
+      }
+      .nini-order-card{
+        background:#fff;border:1px solid #e2e8f0;border-radius:13px;
+        padding:16px;margin-bottom:13px;box-shadow:0 2px 8px rgba(15,23,42,.04)
+      }
+      .nini-order-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+      .nini-order-id{font-weight:800;color:#111827;font-size:16px}
+      .nini-order-date{font-size:12px;color:#64748b;margin-top:4px}
+      .nini-order-status{font-size:12px;font-weight:800;padding:6px 9px;border-radius:999px;white-space:nowrap}
+      .nini-order-status.pending{background:#fff7ed;color:#c2410c}
+      .nini-order-status.processing{background:#eff6ff;color:#1d4ed8}
+      .nini-order-status.shipping{background:#f5f3ff;color:#6d28d9}
+      .nini-order-status.delivered{background:#ecfdf5;color:#15803d}
+      .nini-order-status.cancelled{background:#fef2f2;color:#b91c1c}
+      .nini-order-items{margin-top:13px;border-top:1px solid #eef2f7;padding-top:10px}
+      .nini-order-item{display:flex;justify-content:space-between;gap:12px;padding:8px 0}
+      .nini-order-item-name{font-weight:650;color:#334155}
+      .nini-order-item-meta{font-size:12px;color:#64748b;margin-top:3px}
+      .nini-order-total{display:flex;justify-content:space-between;align-items:center;
+        border-top:1px solid #eef2f7;margin-top:9px;padding-top:12px;font-weight:800;color:#111827}
+      .nini-order-track{margin-top:12px;font-size:13px;color:#2167ed;font-weight:700}
+      @media(max-width:600px){
+        .nini-orders-head{padding:17px 16px 13px}
+        .nini-orders-content{padding:13px 12px 22px}
+        .nini-orders-panel{width:100%}
+      }
+    `;
+    document.head.appendChild(style);
+    document.body.appendChild(modal);
+
+    modal.querySelectorAll("[data-nini-orders-close]").forEach(el => {
+      el.addEventListener("click", closeNiniCustomerOrders);
+    });
+
+    return modal;
+  }
+
+  function closeNiniCustomerOrders() {
+    const modal = document.getElementById("niniCustomerOrdersModal");
+    if (!modal) return;
+    modal.classList.remove("is-open");
+    document.body.style.overflow = "";
+  }
+
+  async function openNiniCustomerOrders() {
+    const user = niniOrdersUser();
+
+    if (!user || !user.id) {
+      if (typeof openAccount === "function") {
+        openAccount();
+      } else {
+        alert("Please login to view your orders.");
+      }
+      return;
+    }
+
+    const modal = ensureNiniOrdersModal();
+    const content = document.getElementById("niniOrdersContent");
+    modal.classList.add("is-open");
+    document.body.style.overflow = "hidden";
+    content.innerHTML = `<div class="nini-orders-loading">Loading your orders...</div>`;
+
+    try {
+      const response = await fetch(
+        `${API_URL}/api/orders/user/${encodeURIComponent(Number(user.id))}`,
+        { headers: { "Accept": "application/json" } }
+      );
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Unable to load orders.");
+      }
+
+      const orders = Array.isArray(data.orders) ? data.orders : [];
+
+      if (!orders.length) {
+        content.innerHTML = `
+          <div class="nini-orders-empty">
+            <div style="font-size:38px;margin-bottom:8px">📦</div>
+            <strong style="display:block;color:#111827;margin-bottom:5px">No orders yet</strong>
+            <span>Your placed orders will appear here.</span>
+          </div>
+        `;
+        return;
+      }
+
+      content.innerHTML = orders.map(order => {
+        const items = Array.isArray(order.items) ? order.items : [];
+        const status = String(order.status || "pending").toLowerCase();
+        const statusLabel = niniOrderStatusLabel(status);
+        const statusClass = niniOrderStatusClass(status);
+        const date = order.created_at
+          ? new Date(order.created_at).toLocaleString("en-IN", {
+              day: "2-digit", month: "short", year: "numeric",
+              hour: "2-digit", minute: "2-digit"
+            })
+          : "—";
+
+        const itemsHtml = items.length
+          ? items.map(item => `
+              <div class="nini-order-item">
+                <div>
+                  <div class="nini-order-item-name">${niniOrdersEscape(item.name || "Product")}</div>
+                  <div class="nini-order-item-meta">
+                    ${item.size ? `Size: ${niniOrdersEscape(item.size)} · ` : ""}
+                    Qty: ${Number(item.quantity || 0)}
+                  </div>
+                </div>
+                <strong>₹${(Number(item.price || 0) * Number(item.quantity || 0)).toLocaleString("en-IN")}</strong>
+              </div>
+            `).join("")
+          : `<div class="nini-order-item-meta">Order items unavailable.</div>`;
+
+        return `
+          <article class="nini-order-card">
+            <div class="nini-order-top">
+              <div>
+                <div class="nini-order-id">Order #${Number(order.id)}</div>
+                <div class="nini-order-date">Placed ${niniOrdersEscape(date)}</div>
+              </div>
+              <span class="nini-order-status ${statusClass}">${niniOrdersEscape(statusLabel)}</span>
+            </div>
+            <div class="nini-order-items">${itemsHtml}</div>
+            <div class="nini-order-total">
+              <span>Total</span>
+              <strong>₹${Number(order.total_amount || 0).toLocaleString("en-IN")}</strong>
+            </div>
+            <div class="nini-order-track">📦 ${niniOrdersEscape(statusLabel)}</div>
+          </article>
+        `;
+      }).join("");
+    } catch (error) {
+      console.error("Nini customer orders error:", error);
+      content.innerHTML = `
+        <div class="nini-orders-error">
+          <strong style="display:block;color:#111827;margin-bottom:7px">Could not load orders</strong>
+          <div style="margin-bottom:14px">${niniOrdersEscape(error.message || "Please try again.")}</div>
+          <button type="button" id="niniOrdersRetry" style="border:0;background:#2167ed;color:#fff;padding:9px 14px;border-radius:8px;font-weight:700;cursor:pointer">Try Again</button>
+        </div>
+      `;
+      const retry = document.getElementById("niniOrdersRetry");
+      if (retry) retry.addEventListener("click", openNiniCustomerOrders);
+    }
+  }
+
+  function handleNiniOrdersClick(event) {
+    const link = event.target.closest('a[href="#orders"], a[href="index.html#orders"]');
+    if (!link) return;
+    event.preventDefault();
+    event.stopPropagation();
+    openNiniCustomerOrders();
+  }
+
+  function init() {
+    document.addEventListener("click", handleNiniOrdersClick, true);
+
+    if (location.hash === "#orders") {
+      history.replaceState(null, "", location.pathname + location.search);
+    }
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init, { once: true });
+  } else {
+    init();
+  }
+
+  window.openNiniCustomerOrders = openNiniCustomerOrders;
+  window.closeNiniCustomerOrders = closeNiniCustomerOrders;
 })();
