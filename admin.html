@@ -815,6 +815,7 @@ h1,h2,h3{margin-top:0}
     </div>
 
     <div id="formMessage" class="message"></div>
+    <div class="meta" style="margin-bottom:14px">Fields marked with <strong>*</strong> are compulsory. Product save/update nahi hoga jab tak required details complete na ho.</div>
 
     <div class="field">
       <label>Product Name *</label>
@@ -850,8 +851,8 @@ h1,h2,h3{margin-top:0}
     </div>
 
     <div class="field">
-      <label>Age Group</label>
-      <select id="productAgeGroup">
+      <label>Age Group *</label>
+      <select id="productAgeGroup" required>
         <option value="">Select Age Group</option>
         <optgroup label="Months">
           <option value="0–3 Months">0–3 Months</option>
@@ -876,8 +877,8 @@ h1,h2,h3{margin-top:0}
     </div>
 
     <div class="field">
-      <label>SKU</label>
-      <input id="productSku" type="text" placeholder="Example: NG-HOOD-001">
+      <label>SKU *</label>
+      <input id="productSku" type="text" required placeholder="Example: NG-HOOD-001">
     </div>
     <div class="field">
       <label>Product Images</label>
@@ -886,7 +887,7 @@ h1,h2,h3{margin-top:0}
 
       <div class="image-upload-box" id="imageBoxFront">
         <strong>Front Image *</strong>
-        <input id="productImageFront" type="url" placeholder="Front image URL (optional)" style="width:100%;margin-top:10px;padding:10px;border:1px solid #d9deea;border-radius:8px">
+        <input id="productImageFront" type="url" placeholder="Front image URL (required)" style="width:100%;margin-top:10px;padding:10px;border:1px solid #d9deea;border-radius:8px">
         <div class="image-upload-row" style="margin-top:10px">
           <input id="productImageFrontFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif">
           <button id="uploadImageFrontBtn" class="btn secondary" type="button">Upload / Replace Front</button>
@@ -936,8 +937,8 @@ h1,h2,h3{margin-top:0}
     </div>
 
     <div class="field">
-      <label>Description</label>
-      <textarea id="productDescription" placeholder="Product description"></textarea>
+      <label>Description *</label>
+      <textarea id="productDescription" required placeholder="Product description"></textarea>
     </div>
 
     <div class="field">
@@ -956,7 +957,7 @@ h1,h2,h3{margin-top:0}
     </div>
 
     <h3>Sizes & Stock</h3>
-    <p class="meta">Sirf jis size ko select karoge wahi product mein available hoga.</p>
+    <p class="meta">Sirf jis size ko select karoge wahi product mein available hoga. Selected size ke liye Stock, MRP aur Selling Price *compulsory* hain.</p>
 
     <div id="sizeGrid" class="size-grid"></div>
 
@@ -1109,8 +1110,8 @@ function buildSizes(){
         value="0"
         disabled
         data-stock="${size}"
-        placeholder="Stock"
-        title="Stock"
+        placeholder="Stock *"
+        title="Stock (required)"
       >
 
       <input
@@ -1119,8 +1120,8 @@ function buildSizes(){
         value="0"
         disabled
         data-mrp="${size}"
-        placeholder="MRP"
-        title="MRP"
+        placeholder="MRP *"
+        title="MRP (required)"
       >
 
       <input
@@ -1765,6 +1766,89 @@ function clearImageChanges(){
 }
 
 
+function validateProductListing(){
+  const errors = [];
+  const name = $("productName").value.trim();
+  const category = $("productCategory").value;
+  const mrpRaw = $("productMrp").value.trim();
+  const priceRaw = $("productPrice").value.trim();
+  const ageGroup = $("productAgeGroup").value;
+  const sku = $("productSku").value.trim();
+  const frontImage = $("productImageFront").value.trim();
+  const description = $("productDescription").value.trim();
+  const mrp = Number(mrpRaw);
+  const price = Number(priceRaw);
+
+  if(!name) errors.push("Product Name is required.");
+  if(!category) errors.push("Category is required.");
+  if(!mrpRaw || !Number.isFinite(mrp) || mrp <= 0) errors.push("MRP must be greater than 0.");
+  if(!priceRaw || !Number.isFinite(price) || price <= 0) errors.push("Selling Price must be greater than 0.");
+  if(Number.isFinite(mrp) && Number.isFinite(price) && price > mrp){
+    errors.push("Selling Price cannot be greater than MRP.");
+  }
+  if(!ageGroup) errors.push("Age Group is required.");
+  if(!sku) errors.push("SKU is required.");
+  if(!frontImage) errors.push("Front Image is required. Upload it first or enter its image URL.");
+  if(!description) errors.push("Product Description is required.");
+
+  const sizes = collectSizes();
+  if(sizes.length === 0){
+    errors.push("Select at least one available size.");
+  }else{
+    SIZE_OPTIONS.forEach(size=>{
+      const checkbox = document.querySelector(`input[data-size="${CSS.escape(size)}"]`);
+      if(!checkbox || !checkbox.checked) return;
+
+      const stock = document.querySelector(`input[data-stock="${CSS.escape(size)}"]`);
+      const sizeMrp = document.querySelector(`input[data-mrp="${CSS.escape(size)}"]`);
+      const sizePrice = document.querySelector(`input[data-price="${CSS.escape(size)}"]`);
+      const stockValue = Number(stock?.value);
+      const sizeMrpValue = Number(sizeMrp?.value);
+      const sizePriceValue = Number(sizePrice?.value);
+
+      if(!Number.isFinite(stockValue) || stockValue < 1){
+        errors.push(`${size}: Stock must be at least 1.`);
+      }
+      if(!Number.isFinite(sizeMrpValue) || sizeMrpValue <= 0){
+        errors.push(`${size}: MRP must be greater than 0.`);
+      }
+      if(!Number.isFinite(sizePriceValue) || sizePriceValue <= 0){
+        errors.push(`${size}: Selling Price must be greater than 0.`);
+      }
+      if(Number.isFinite(sizeMrpValue) && Number.isFinite(sizePriceValue) && sizePriceValue > sizeMrpValue){
+        errors.push(`${size}: Selling Price cannot be greater than MRP.`);
+      }
+    });
+  }
+
+  if(errors.length){
+    showMessage(
+      "formMessage",
+      "Please complete all required product details:\n• " + errors.join("\n• "),
+      "error"
+    );
+    const firstRequired = [
+      ["productName", name],
+      ["productCategory", category],
+      ["productMrp", mrpRaw],
+      ["productPrice", priceRaw],
+      ["productAgeGroup", ageGroup],
+      ["productSku", sku],
+      ["productImageFront", frontImage],
+      ["productDescription", description]
+    ].find(([_,value])=>!value);
+    if(firstRequired){
+      const el = $(firstRequired[0]);
+      el.focus();
+      el.scrollIntoView({behavior:"smooth",block:"center"});
+    }
+    return false;
+  }
+
+  return true;
+}
+
+
 async function saveProduct(){
 
   const name = $("productName").value.trim();
@@ -1785,34 +1869,9 @@ async function saveProduct(){
   const tags = $("productTags").value.trim();
   const sizes = collectSizes();
 
-  if(!name || !category || !Number.isFinite(mrp) || !Number.isFinite(price)){
-    showMessage(
-      "formMessage",
-      "Product name, category, MRP and selling price are required.",
-      "error"
-    );
-    return;
-  }
-
-  if(mrp < 0 || price < 0 || price > mrp){
-    showMessage(
-      "formMessage",
-      "Selling price MRP se greater nahi ho sakta.",
-      "error"
-    );
-    return;
-  }
+  if(!validateProductListing()) return;
 
   updateDiscount();
-
-  if(sizes.length === 0){
-    showMessage(
-      "formMessage",
-      "At least one size select karo.",
-      "error"
-    );
-    return;
-  }
 
   $("saveBtn").disabled = true;
   $("saveBtn").textContent =
